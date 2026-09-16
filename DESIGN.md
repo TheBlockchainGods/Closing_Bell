@@ -166,7 +166,7 @@ Simulated language is kept tight. The Ring control is the only place that says "
 
 **After Hours** carries one Coming soon badge and a bullish one-liner about the weekly GME pot. Stake controls stay disabled (`secondary`). The Roadmap section holds brass "Next" cards for what ships after the Bell Pot.
 
-**Launch chrome** sits under the trust tape (and mirrors in the footer): truncated CA + Copy, Chart, Docs (`/docs` stub).
+**Launch chrome** sits under the trust tape (and mirrors in the footer): truncated CA + Copy, Chart, Docs (`/docs`), Verify.
 
 ### Lore voice
 
@@ -178,4 +178,4 @@ Closing Bell borrows the thing everyone already knows from traditional markets: 
 
 ### Copy that follows from the product
 
-Most users will never trade through this page, so the interface stops implying they have to. Tickets are described as minted by the on-chain buy, with venue named as irrelevant: "bots, terminals, aggregators and this page all count the same." The site swap still exists, inside a disclosure whose own summary says it is optional.
+Most users will never trade through this page, so the interface stops implying they have to. Tickets are described as minted by the on-chain buy: "However you buy, you earn tickets." The site swap still exists, inside a disclosure whose own summary says it is optional.

@@ -13,7 +13,7 @@ The marketing site remains mock-driven (`lib/mock-data.ts`, `lib/bell-store.tsx`
 ## What changed in the launch chrome pass
 
 - **Launch bar** under the trust tape: truncated CA + Copy, Chart, Docs, Verify. Mirrored in the footer. Empty `NEXT_PUBLIC_TOKEN_ADDRESS` / `NEXT_PUBLIC_CHART_URL` show "CA at launch" and keep Chart/Copy disabled (see `.env.example`).
-- **Docs** at `/docs`: short rules + links to How tickets work and `/verify`.
+- **Docs** at `/docs`: product documentation (tickets, odds, fees, draw, verify, payouts, architecture, ops, FAQ) with sidebar nav.
 - **Verify** at `/verify`: one-tap ring check (latest or example); Advanced still has full receipt paste (`packages/fairness`).
 - **Roadmap:** brass cards with a Next badge (After Hours first), bullish blurbs, no neon empty grid.
 - **After Hours:** one Coming soon badge + weekly GME pot one-liner. Stake UI still disabled. Long "no vault / inert" copy removed.
@@ -42,7 +42,7 @@ Six product decisions landed, in rough order of how much of the UI they moved.
 
 **The mascot is photoreal.** The flat silhouette cat is replaced by a rendered kitten composited over the bell rig, which stays SVG so it can still swing. He is named Bellwether, with one line of lore in the hero and no backstory dump. The nav wordmark keeps the simple brass bell glyph, since that is what reads at 20px.
 
-**Copy no longer implies you must trade here.** The hero, How it works, the locked rules, and the footer all state that tickets come from any venue.
+**Copy no longer implies you must trade here.** The hero, How it works, the locked rules, and the footer all state that however you buy, you earn tickets.
 
 One bug worth flagging, because it was a modelling error rather than a typo: the ladder originally held absolute ticket counts while the window total reset to zero on a ring, so for a few seconds after every ring each wallet's raw share was enormous and the entire ladder pinned to the cap. The ladder is now held as shares of the window, which stays correct at any window size.
 
@@ -87,7 +87,7 @@ Advanced (collapsed) still supports paste/upload JSON and the full formula write
 
 MATCH is about the draw math matching the receipt. Payout settlement is separate. Optional sitewide banner while `NEXT_PUBLIC_DRY_RUN_PAYOUTS=true`: payouts dry-run until go-live; draws and verify still use the real formula.
 
-Short rules: [/docs](http://localhost:3000/docs).
+Short rules summary in the footer; full docs: [/docs](http://localhost:3000/docs).
 
 ## Deploy to Vercel
 
@@ -115,7 +115,7 @@ Notes for when this becomes a real product:
 app/
   layout.tsx          Fonts (Archivo + IBM Plex Mono), metadata, html shell
   page.tsx            Section composition, wrapped in MotionRoot + BellProvider
-  docs/page.tsx       Short rules + links to verify
+  docs/               Documentation site (sidebar + nested pages)
   verify/page.tsx     Public ring recomputation
   globals.css         Design tokens, base styles, utilities, component classes
 packages/
@@ -173,7 +173,7 @@ Anything simulated is labeled in the UI. The address lookup says it is read-only
 
 Surfaced in the page copy, and the numbers in the mock store obey them:
 
-- Buys inside the window earn Bell tickets weighted by GME spent, from **any venue**. Per-wallet odds are capped at **10%** at launch, so one wallet cannot own the bell.
+- Buys inside the window earn Bell tickets weighted by GME spent. However you buy, you earn tickets. Per-wallet odds are capped at **10%** at launch, so one wallet cannot own the bell.
 - Selling burns tickets pro-rata, immediately, with no cooldown.
 - The bell rings, the winner is paid the full Bell Pot in GME, and every Bell ticket wipes to zero.
 - **Bells ring every day** at 09:30 / 12:30 / 16:00 ET (`BELLS_24_7=true`). The chain never sleeps.

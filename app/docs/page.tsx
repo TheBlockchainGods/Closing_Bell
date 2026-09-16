@@ -1,102 +1,98 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Wordmark } from "@/components/brand/Wordmark";
-import { DryRunBanner } from "@/components/DryRunBanner";
-import { ButtonLink } from "@/components/ui/Button";
+import {
+  DocsCallout,
+  DocsH1,
+  DocsH2,
+  DocsLead,
+  DocsOl,
+  DocsP,
+  DocsPager,
+  DocsUl,
+} from "@/components/docs/DocsProse";
+import { DOCS_NAV } from "@/lib/docs-nav";
 
-export const metadata = {
-  title: "Docs · Closing Bell ($BELL)",
+export const metadata: Metadata = {
+  title: "Introduction",
   description:
-    "Short rules for Closing Bell tickets, odds, bag lock, and how to verify a ring.",
+    "What Closing Bell is, who it is for, and how to read these docs.",
 };
 
-const RULES = [
-  {
-    title: "Earn tickets by buying",
-    body: "Any on-chain buy of $BELL on the GME pair mints Bell tickets for the open window, weighted by GME spent. However you buy, the same rules apply.",
-  },
-  {
-    title: "Your odds move until the bag locks",
-    body: "Buying earlier does not freeze your %. What counts is the ticket bag at bag lock (snapshot), right before the bell. You can verify that bag after the ring.",
-  },
-  {
-    title: "Odds cap (10%)",
-    body: "The odds cap is max draw weight share vs the live ticket bag, so one wallet cannot own the bell. Hitting ~10% early is not a locked win chance for the rest of the window. Extra spend still buys $BELL; past the cap it adds no draw weight.",
-  },
-  {
-    title: "Selling burns tickets",
-    body: "Sell pro-rata and tickets burn in the same transaction. Conviction is the entry fee.",
-  },
-  {
-    title: "The bell settles everything",
-    body: "At 09:30 / 12:30 / 16:00 ET every day, one ticket is drawn, the pot pays out in GME, and every ticket wipes.",
-  },
-  {
-    title: "After Hours is next",
-    body: "Weekly staking for a GME pot sits on the roadmap behind a clean Bell Pot run. Stake controls stay off until that ships.",
-  },
-];
-
-export default function DocsPage() {
+export default function DocsIntroPage() {
   return (
-    <div className="min-h-dvh bg-floor-1000 text-ink">
-      <DryRunBanner />
-      <header className="border-b border-line bg-floor-950/90">
-        <div className="mx-auto flex h-16 w-full max-w-[840px] items-center justify-between gap-4 px-5 sm:px-8">
-          <Link href="/" className="rounded-xs transition-opacity hover:opacity-80">
-            <Wordmark withTicker={false} />
-          </Link>
-          <div className="flex items-center gap-2">
-            <ButtonLink href="/verify" variant="ghost" size="sm">
-              Verify
-            </ButtonLink>
-            <ButtonLink href="/" variant="secondary" size="sm">
-              Back to site
-            </ButtonLink>
-          </div>
-        </div>
-      </header>
+    <article>
+      <p className="eyebrow">Introduction</p>
+      <DocsH1>Closing Bell docs</DocsH1>
+      <DocsLead>
+        Closing Bell ($BELL) is a market ritual on the GME pair. Buy $BELL during
+        an open window, earn Bell tickets, watch the Bell Pot climb, and when the
+        bell rings one wallet takes the pot in GME. Tickets wipe. The next window
+        starts fresh.
+      </DocsLead>
 
-      <main className="mx-auto w-full max-w-[840px] px-5 py-14 sm:px-8 sm:py-20">
-        <p className="eyebrow">Docs</p>
-        <h1 className="mt-4 font-display type-expanded text-[clamp(2.4rem,8vw,3.6rem)] font-extrabold uppercase leading-[0.9] tracking-[-0.02em]">
-          Closing Bell, <span className="brass-text">short form</span>
-        </h1>
-        <p className="mt-5 max-w-xl text-[1.05rem] leading-relaxed text-ink-2">
-          The locked rules that define the ritual. Check any published ring on
-          the verify page.
+      <DocsCallout title="Who picks the winner">
+        <p>
+          Nobody on the team picks a wallet. The draw keeper runs the published
+          formula <code className="font-mono text-brass-200">closing-bell-draw-v1</code>.
+          Operators claim fees, sweep the pot wallet, and (when live) send the
+          payout transaction to the formula winner. They do not choose who wins.
         </p>
+      </DocsCallout>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <ButtonLink href="/verify" variant="primary" size="sm">
-            Verify a ring
-          </ButtonLink>
-          <ButtonLink href="#how-tickets-work" variant="secondary" size="sm">
-            How tickets work
-          </ButtonLink>
-        </div>
+      <DocsH2 id="start-here">Start here</DocsH2>
+      <DocsOl>
+        {DOCS_NAV.filter((item) => item.href !== "/docs").map((item) => (
+          <li key={item.href}>
+            <Link href={item.href} className="text-brass-200 hover:text-tape">
+              {item.label}
+            </Link>
+          </li>
+        ))}
+      </DocsOl>
 
-        <ol
-          id="how-tickets-work"
-          className="mt-12 flex flex-col gap-8 border-t border-line pt-10"
-        >
-          {RULES.map((rule, index) => (
-            <li key={rule.title} className="flex gap-5">
-              <span className="font-display text-[1.4rem] font-extrabold tabular-nums text-brass-600">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <div>
-                <h2 className="font-display text-[1.15rem] font-bold text-brass-100">
-                  {rule.title}
-                </h2>
-                <p className="mt-2 text-[0.95rem] leading-relaxed text-ink-2">
-                  {rule.body}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </main>
-    </div>
+      <DocsH2 id="schedule">Bell schedule</DocsH2>
+      <DocsP>
+        Bells ring every calendar day at <strong>09:30</strong>,{" "}
+        <strong>12:30</strong>, and <strong>16:00</strong> America/New_York
+        (Open, Lunch, Close). Robinhood Chain never sleeps, so weekends use the
+        same schedule.
+      </DocsP>
+
+      <DocsH2 id="how-to-read">How to read these docs</DocsH2>
+      <DocsUl>
+        <li>
+          Product pages (tickets, odds, fees, draw) are written for traders
+          first, then add precise formulas.
+        </li>
+        <li>
+          Architecture and operations pages describe what software runs where,
+          including AWS Lightsail in us-west-2 when deployed that way.
+        </li>
+        <li>
+          After any ring, use{" "}
+          <Link href="/verify" className="text-brass-200 hover:text-tape">
+            /verify
+          </Link>{" "}
+          to recompute the published receipt with the same math as the keeper.
+        </li>
+      </DocsUl>
+
+      <DocsCallout title="Payouts mode">
+        <p>
+          Live draw math always runs. Whether GME actually leaves the jackpot
+          wallet depends on deployment flags such as{" "}
+          <code className="font-mono text-brass-200">DRY_RUN_PAYOUTS</code>. When
+          dry-run is on, the winner and receipt are still published; the transfer
+          is skipped. See{" "}
+          <Link href="/docs/payouts" className="text-brass-200 hover:text-tape">
+            Payouts
+          </Link>
+          .
+        </p>
+      </DocsCallout>
+
+      <DocsPager next={{ href: "/docs/tickets", label: "How tickets work" }} />
+    </article>
   );
 }
