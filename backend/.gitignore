@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+telegram.secrets.env
+lightsail-deployment.json
+lightsail-endpoint.json
+coverage/
+*.log
+
+lightsail.secrets.env

@@ -1,0 +1,135 @@
+[
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix0000000000000000000000000000000000000000000000000000000000001",
+    "logIndex": 0,
+    "blockNumber": 1001,
+    "kind": "buy",
+    "wallet": "0x4b19Ce77a0E2d61f5c8B3aD9017f4E62c0aB8137",
+    "gmeAmount": 12.5,
+    "bellAmount": 250000,
+    "occurredAt": "2026-09-14T14:00:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix0000000000000000000000000000000000000000000000000000000000002",
+    "logIndex": 0,
+    "blockNumber": 1002,
+    "kind": "buy",
+    "wallet": "0x91cE0a4F72Bd8e13aC6f5019D2b74e8A3cF10d55",
+    "gmeAmount": 10.0,
+    "bellAmount": 200000,
+    "occurredAt": "2026-09-14T14:05:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix0000000000000000000000000000000000000000000000000000000000003",
+    "logIndex": 0,
+    "blockNumber": 1003,
+    "kind": "buy",
+    "wallet": "0xD2f7B0a19cE485376aB1e0fC9d24358bE7a01c6E",
+    "gmeAmount": 8.0,
+    "bellAmount": 160000,
+    "occurredAt": "2026-09-14T14:10:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix0000000000000000000000000000000000000000000000000000000000004",
+    "logIndex": 0,
+    "blockNumber": 1004,
+    "kind": "buy",
+    "wallet": "0x38Ac91e0bF7d2154C6a8039E1bD57f204aC9e8B3",
+    "gmeAmount": 6.5,
+    "bellAmount": 130000,
+    "occurredAt": "2026-09-14T14:15:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix0000000000000000000000000000000000000000000000000000000000005",
+    "logIndex": 0,
+    "blockNumber": 1005,
+    "kind": "buy",
+    "wallet": "0xa07E4c1D93bF6820Ae5f1c704B29d63f85E0a1C7",
+    "gmeAmount": 5.0,
+    "bellAmount": 100000,
+    "occurredAt": "2026-09-14T14:20:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix0000000000000000000000000000000000000000000000000000000000006",
+    "logIndex": 0,
+    "blockNumber": 1006,
+    "kind": "buy",
+    "wallet": "0x6cB1470eA9f3D2185c07eB6941Da03f52e8C7b04",
+    "gmeAmount": 4.0,
+    "bellAmount": 80000,
+    "occurredAt": "2026-09-14T14:25:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix0000000000000000000000000000000000000000000000000000000000007",
+    "logIndex": 0,
+    "blockNumber": 1007,
+    "kind": "buy",
+    "wallet": "0xE51b30C7a48d09F26bC1740e35aB92f018D6c4A9",
+    "gmeAmount": 3.0,
+    "bellAmount": 60000,
+    "occurredAt": "2026-09-14T14:30:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix0000000000000000000000000000000000000000000000000000000000008",
+    "logIndex": 0,
+    "blockNumber": 1008,
+    "kind": "buy",
+    "wallet": "0x2fD84b0e91Ac7365dB1e04f8a5C93710eB6d2c8F",
+    "gmeAmount": 2.5,
+    "bellAmount": 50000,
+    "occurredAt": "2026-09-14T14:35:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix0000000000000000000000000000000000000000000000000000000000009",
+    "logIndex": 0,
+    "blockNumber": 1009,
+    "kind": "buy",
+    "wallet": "0x7Ad3F1c94E0b62Aa5D8e1fB0937C4e21bC5a9Df0",
+    "gmeAmount": 1.2,
+    "bellAmount": 24000,
+    "occurredAt": "2026-09-14T14:40:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix000000000000000000000000000000000000000000000000000000000000a",
+    "logIndex": 0,
+    "blockNumber": 1010,
+    "kind": "buy",
+    "wallet": "0x4b19Ce77a0E2d61f5c8B3aD9017f4E62c0aB8137",
+    "gmeAmount": 8.0,
+    "bellAmount": 160000,
+    "occurredAt": "2026-09-14T15:00:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix000000000000000000000000000000000000000000000000000000000000b",
+    "logIndex": 0,
+    "blockNumber": 1011,
+    "kind": "sell",
+    "wallet": "0x6cB1470eA9f3D2185c07eB6941Da03f52e8C7b04",
+    "gmeAmount": 1.5,
+    "bellAmount": 40000,
+    "bellBalanceBefore": 80000,
+    "occurredAt": "2026-09-14T15:10:00.000Z"
+  },
+  {
+    "adapter": "fixture",
+    "txHash": "0xfix000000000000000000000000000000000000000000000000000000000000c",
+    "logIndex": 0,
+    "blockNumber": 1012,
+    "kind": "buy",
+    "wallet": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "gmeAmount": 0.1,
+    "bellAmount": 2000,
+    "occurredAt": "2026-09-14T15:15:00.000Z"
+  }
+]

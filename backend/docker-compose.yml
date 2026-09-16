@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: bell
+      POSTGRES_PASSWORD: bell
+      POSTGRES_DB: closing_bell
+    ports:
+      - "5432:5432"
+    volumes:
+      - bell_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bell -d closing_bell"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      DATABASE_URL: postgres://bell:bell@db:5432/closing_bell
+      FIXTURE_MODE: "true"
+      PORT: "8787"
+      CHAIN_ID: "4663"
+      ODDS_CAP_BPS: "1000"
+      JACKPOT_SHARE_BPS: "2000"
+      MIN_BUY_USD: "5"
+      TICKETS_PER_USD: "1000"
+      BELLS_24_7: "true"
+      SNAPSHOT_LEAD_SECONDS: "120"
+      GME_USD_PRICE: "23.18"
+      JACKPOT_WALLET: "0x1111111111111111111111111111111111111111"
+      JACKPOT_WALLET_BALANCE_GME: "1284.62"
+      PONS_CLAIMABLE_GME: "96.41"
+      START_BLOCK: "0"
+      INDEXER_POLL_MS: "2000"
+      KEEPER_POLL_MS: "1000"
+      DRY_RUN_PAYOUTS: "true"
+      MIN_POT_GME: "1"
+      TELEGRAM_BOT_TOKEN: ""
+      TELEGRAM_CHAT_ID: ""
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  bell_pg:
