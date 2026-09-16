@@ -81,6 +81,12 @@ export function SiteFooter() {
                 </li>
               ))}
             </ul>
+            <a
+              href="/docs"
+              className="mt-5 inline-flex rounded-xs font-mono text-[0.63rem] font-medium uppercase tracking-[0.18em] text-brass-400 transition-colors hover:text-tape"
+            >
+              Full docs
+            </a>
           </div>
         </div>
 

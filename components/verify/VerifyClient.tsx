@@ -383,7 +383,7 @@ export function VerifyClient({ apiBase }: { apiBase: string | null }) {
             Check a sample ring
           </Button>
           <ButtonLink href="/docs" variant="ghost" size="sm">
-            Short rules
+            Docs
           </ButtonLink>
         </div>
       </section>
