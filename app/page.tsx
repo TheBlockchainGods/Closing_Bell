@@ -1,4 +1,5 @@
 import { Atmosphere } from "@/components/atmosphere/Atmosphere";
+import { DryRunBanner } from "@/components/DryRunBanner";
 import { LaunchBar } from "@/components/LaunchBar";
 import { MotionRoot } from "@/components/MotionRoot";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -26,6 +27,7 @@ export default function Page() {
         >
           Skip to the Bell Pot
         </a>
+        <DryRunBanner />
         <SiteHeader />
         <TrustStrip />
         <LaunchBar />

@@ -202,14 +202,15 @@ export function BellPot() {
           <Metric
             label="Odds cap"
             value={formatPct(bell.oddsCap, 2)}
-            note="Per wallet, hard"
+            note="Max weight vs live bag"
           />
         </div>
       </div>
 
       <p className="mt-5 max-w-2xl text-[0.88rem] leading-relaxed text-ink-3">
-        Fees fund the Bell Pot. Exact fee routing is set at launch; the odds cap
-        of {formatPct(bell.oddsCap)} per wallet is the rule that stays fixed.
+        Fees fund the Bell Pot. Odds move until the bag locks. The odds cap (
+        {formatPct(bell.oddsCap)}) is max draw weight share vs the live ticket
+        bag, not a locked win chance for the rest of the window.
       </p>
 
       <AnimatePresence initial={false}>

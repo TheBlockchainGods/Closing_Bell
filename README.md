@@ -14,7 +14,7 @@ The marketing site remains mock-driven (`lib/mock-data.ts`, `lib/bell-store.tsx`
 
 - **Launch bar** under the trust tape: truncated CA + Copy, Chart, Docs, Verify. Mirrored in the footer. Empty `NEXT_PUBLIC_TOKEN_ADDRESS` / `NEXT_PUBLIC_CHART_URL` show "CA at launch" and keep Chart/Copy disabled (see `.env.example`).
 - **Docs** at `/docs`: short rules + links to How tickets work and `/verify`.
-- **Verify** at `/verify`: paste a ring receipt, recompute the winner with the same formula the keeper uses (`packages/fairness`).
+- **Verify** at `/verify`: one-tap ring check (latest or example); Advanced still has full receipt paste (`packages/fairness`).
 - **Roadmap:** brass cards with a Next badge (After Hours first), bullish blurbs, no neon empty grid.
 - **After Hours:** one Coming soon badge + weekly GME pot one-liner. Stake UI still disabled. Long "no vault / inert" copy removed.
 - **Mock diet:** "Simulated draw…" stays on the Ring control only. Footer mock wall shortened. Stage stays brass; `#00C805` for LIVE pips and social hover only.
@@ -79,13 +79,13 @@ npm run test:fairness
 Anyone can check that a published winner matches the public formula and inputs.
 
 1. Open [/verify](http://localhost:3000/verify).
-2. Load the built-in fixture, or paste / upload a ring receipt JSON (and a ticket snapshot if it is not embedded).
-3. Click **Recompute winner**.
-4. Green **MATCH** means the announced winner equals the recomputed pick for those inputs. **MISMATCH** means the receipt is wrong (or the snapshot / seed was tampered).
+2. The page loads the latest ring when the API is up, or a sample ring when it is not.
+3. Click **Check this ring** (or **Check a sample ring**).
+4. Green **MATCH** means this page got the same winner from the published bag and formula. **MISMATCH** means the receipt is wrong.
 
-Draw math lives in one shared package, [`packages/fairness`](./packages/fairness), used by the backend keeper and the verify page so they cannot drift.
+Advanced (collapsed) still supports paste/upload JSON and the full formula write-up. Draw math lives in [`packages/fairness`](./packages/fairness), shared with the backend keeper.
 
-Honest framing: the keeper publishes the inputs; the public recomputes. When `DRY_RUN_PAYOUTS` is still on, verification is for the draw result only, not that funds moved. Optional live fetch: `GET {NEXT_PUBLIC_API_BASE}/winners/:windowId` returns the published receipt when the API is reachable; paste-verify always works offline.
+MATCH is about the draw math matching the receipt. Payout settlement is separate. Optional sitewide banner while `NEXT_PUBLIC_DRY_RUN_PAYOUTS=true`: payouts dry-run until go-live; draws and verify still use the real formula.
 
 Short rules: [/docs](http://localhost:3000/docs).
 

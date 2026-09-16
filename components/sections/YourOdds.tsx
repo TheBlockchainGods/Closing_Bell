@@ -1,22 +1,27 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-import { useState } from "react";
-
 import { AddressInput } from "@/components/ui/AddressInput";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
 import { useBell } from "@/lib/bell-store";
 import { cn } from "@/lib/cn";
-import { EASE_BELL } from "@/lib/motion";
-import { PONS_URL, SAMPLE_LOOKUPS, isAddressLike } from "@/lib/mock-data";
 import {
   formatGme,
   formatGmeWhole,
   formatPct,
   shortAddress,
 } from "@/lib/format";
+import {
+  bagLockAt,
+  formatCountdownClock,
+  remainingUntil,
+} from "@/lib/market-clock";
+import { PONS_URL, SAMPLE_LOOKUPS, isAddressLike } from "@/lib/mock-data";
+import { EASE_BELL } from "@/lib/motion";
+import { useBellClock, useNow } from "@/lib/use-clock";
+import { motion, useReducedMotion } from "framer-motion";
+import { useState } from "react";
 
 function OddsDial({
   odds,
@@ -77,7 +82,7 @@ function OddsDial({
           className="font-display type-expanded text-[2.1rem] font-extrabold tabular-nums text-ink"
         />
         <span className="mt-0.5 font-mono text-[0.58rem] uppercase tracking-[0.2em] text-ink-3">
-          of {formatPct(cap)} cap
+          Your odds now
         </span>
       </div>
     </div>
@@ -162,9 +167,10 @@ function TicketLadder() {
       </ul>
 
       <p className="border-t border-line px-5 py-4 text-[0.82rem] leading-relaxed text-ink-3 sm:px-6">
-        Rows marked at cap spent enough to clear {formatPct(bell.oddsCap)} on raw
-        ticket share. The cap exists so one wallet cannot own the bell, so their
-        extra weight is simply not counted.
+        At odds cap means this wallet already holds the max draw weight share vs
+        the live ticket bag ({formatPct(bell.oddsCap)}). The cap exists so one
+        wallet cannot own the bell. Extra weight past the cap is simply not
+        counted. Odds still move until bag lock.
       </p>
     </div>
   );
@@ -233,6 +239,8 @@ function AdvancedSwap() {
 
 export function YourOdds() {
   const bell = useBell();
+  const clock = useBellClock(1);
+  const now = useNow();
   const [draft, setDraft] = useState("");
   const [touched, setTouched] = useState(false);
 
@@ -251,6 +259,19 @@ export function YourOdds() {
 
   const watched = bell.watched;
   const mine = bell.myRow;
+  const next = clock.next;
+  const bagLock = next ? bagLockAt(next.at) : null;
+  const bagLockRemaining =
+    bagLock && now ? remainingUntil(bagLock, now) : null;
+  const bagLocked =
+    Boolean(bagLock && now && now.getTime() >= bagLock.getTime());
+  const bagLocksLabel = !next
+    ? "--"
+    : bagLocked
+      ? "Locked for this ring"
+      : bagLockRemaining
+        ? formatCountdownClock(bagLockRemaining)
+        : "--";
 
   return (
     <Section
@@ -258,8 +279,24 @@ export function YourOdds() {
       index="04"
       eyebrow="Your odds"
       title="Read any wallet's position"
-      lead="Tickets come from on-chain $BELL buys on the GME pair, wherever you trade. Paste an address to read its tickets and odds for this window. Nothing is signed and no wallet is required."
+      lead="Tickets come from on-chain $BELL buys on the GME pair, wherever you trade. Your odds move until the bag locks. Paste an address to read tickets and odds for this window. Nothing is signed and no wallet is required."
     >
+      <div className="mb-6 max-w-3xl space-y-2 text-[0.92rem] leading-relaxed text-ink-2">
+        <p>Your odds move until the bag locks.</p>
+        <p>Buying earlier does not freeze your % until the bell.</p>
+        <p>
+          The odds cap (10%) is max draw weight share vs the live ticket bag. It
+          does not lock a 10% win chance for the rest of the window.
+        </p>
+        <p>
+          What counts is the ticket bag at bag lock (snapshot), which you can{" "}
+          <a href="/verify" className="text-brass-200 underline-offset-2 hover:underline">
+            verify
+          </a>{" "}
+          after the ring.
+        </p>
+      </div>
+
       <div className="panel shadow-panel overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <div className="border-b border-line px-5 py-7 sm:px-8 lg:border-b-0 lg:border-r">
@@ -296,9 +333,9 @@ export function YourOdds() {
                   setDraft("");
                   setTouched(false);
                 }}
-                title="Demo fill. Nothing is signed."
+                title="Fill a sample wallet address. Nothing is signed."
               >
-                Connect wallet
+                Use sample wallet
               </Button>
               {watched ? (
                 <Button variant="ghost" size="sm" onClick={bell.clearWatch}>
@@ -308,7 +345,7 @@ export function YourOdds() {
             </div>
 
             <div className="mt-6 border-t border-line pt-5">
-              <p className="label-mono">Or try a seeded address</p>
+              <p className="label-mono">Or try a sample address</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {SAMPLE_LOOKUPS.map((address) => (
                   <button
@@ -340,7 +377,7 @@ export function YourOdds() {
                 <>
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <p className="label-mono">
-                      {bell.watchedViaConnect ? "Demo wallet" : "Reading"}
+                      {bell.watchedViaConnect ? "Sample wallet" : "Reading"}
                     </p>
                     <p className="font-mono text-[0.78rem] font-semibold text-brass-200">
                       {shortAddress(watched.address)}
@@ -348,7 +385,11 @@ export function YourOdds() {
                   </div>
                   <div className="mt-4">
                     <Stat
-                      label="Bell tickets"
+                      label="Your odds now"
+                      value={formatPct(mine.odds)}
+                    />
+                    <Stat
+                      label="Your tickets"
                       value={
                         <AnimatedNumber
                           value={mine.tickets}
@@ -356,6 +397,11 @@ export function YourOdds() {
                         />
                       }
                     />
+                    <Stat
+                      label="At odds cap?"
+                      value={mine.capped ? "Yes" : "No"}
+                    />
+                    <Stat label="Bag locks in…" value={bagLocksLabel} />
                     <Stat
                       label="GME spent this window"
                       value={
@@ -369,9 +415,11 @@ export function YourOdds() {
                   </div>
                   {mine.capped ? (
                     <p className="mt-4 rounded-xs border border-ember-500/40 bg-ember-500/8 px-3.5 py-3 text-[0.82rem] leading-relaxed text-ink-2">
-                      This wallet is held at the {formatPct(bell.oddsCap)} cap.
-                      Raw share is {formatPct(mine.share)}, so spending more
-                      mints more $BELL but adds no odds.
+                      This wallet is at the odds cap ({formatPct(bell.oddsCap)}
+                      ): max draw weight share vs the live bag. Raw share is{" "}
+                      {formatPct(mine.share)}. Spending more mints more $BELL but
+                      adds no draw weight. That still is not a locked win chance
+                      until bag lock.
                     </p>
                   ) : null}
                 </>
@@ -381,9 +429,12 @@ export function YourOdds() {
                   <p className="mt-3 font-display type-expanded text-[1.3rem] font-extrabold uppercase leading-[1.1] text-ink">
                     Paste an address to read its odds
                   </p>
+                  <div className="mt-4">
+                    <Stat label="Bag locks in…" value={bagLocksLabel} />
+                  </div>
                   <p className="mt-3 text-[0.88rem] leading-relaxed text-ink-2">
-                    The ladder below is live for the whole window either way. You
-                    do not need a wallet to read it.
+                    The ladder below updates with the live ticket bag. You do not
+                    need a wallet to read it.
                   </p>
                 </>
               )}
