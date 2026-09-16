@@ -1,12 +1,13 @@
 import Link from "next/link";
 
 import { Wordmark } from "@/components/brand/Wordmark";
+import { DryRunBanner } from "@/components/DryRunBanner";
 import { ButtonLink } from "@/components/ui/Button";
 
 export const metadata = {
   title: "Docs · Closing Bell ($BELL)",
   description:
-    "Short rules for Closing Bell tickets, odds, and how to verify a ring.",
+    "Short rules for Closing Bell tickets, odds, bag lock, and how to verify a ring.",
 };
 
 const RULES = [
@@ -15,8 +16,12 @@ const RULES = [
     body: "Any on-chain buy of $BELL on the GME pair mints Bell tickets for the open window, weighted by GME spent. However you buy, the same rules apply.",
   },
   {
-    title: "Odds cap at 10%",
-    body: "Per-wallet odds are capped at 10% at launch so one wallet cannot own the bell. Extra spend still buys $BELL; it does not buy more odds.",
+    title: "Your odds move until the bag locks",
+    body: "Buying earlier does not freeze your %. What counts is the ticket bag at bag lock (snapshot), right before the bell. You can verify that bag after the ring.",
+  },
+  {
+    title: "Odds cap (10%)",
+    body: "The odds cap is max draw weight share vs the live ticket bag, so one wallet cannot own the bell. Hitting ~10% early is not a locked win chance for the rest of the window. Extra spend still buys $BELL; past the cap it adds no draw weight.",
   },
   {
     title: "Selling burns tickets",
@@ -35,6 +40,7 @@ const RULES = [
 export default function DocsPage() {
   return (
     <div className="min-h-dvh bg-floor-1000 text-ink">
+      <DryRunBanner />
       <header className="border-b border-line bg-floor-950/90">
         <div className="mx-auto flex h-16 w-full max-w-[840px] items-center justify-between gap-4 px-5 sm:px-8">
           <Link href="/" className="rounded-xs transition-opacity hover:opacity-80">
@@ -57,8 +63,8 @@ export default function DocsPage() {
           Closing Bell, <span className="brass-text">short form</span>
         </h1>
         <p className="mt-5 max-w-xl text-[1.05rem] leading-relaxed text-ink-2">
-          The locked rules that define the ritual. Recompute any published ring
-          on the verify page.
+          The locked rules that define the ritual. Check any published ring on
+          the verify page.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">

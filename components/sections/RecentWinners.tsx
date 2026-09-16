@@ -45,7 +45,6 @@ function Stamp({ winner }: { winner: WinnerRecord }) {
   return (
     <span className="whitespace-nowrap font-mono text-[0.62rem] uppercase tracking-[0.12em] text-ink-3">
       {formatEtStamp(winner.ringedAt)}
-      {winner.simulated ? " \u00b7 simulated" : ""}
     </span>
   );
 }

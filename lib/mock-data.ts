@@ -229,8 +229,8 @@ export const LOCKED_RULES: LockedRule[] = [
   },
   {
     id: "cap",
-    title: "Odds are capped at 10% per wallet",
-    body: "The cap exists so one wallet cannot own the bell. Past the cap, more spending buys more $BELL but no more odds, and the excess weight is simply not counted.",
+    title: "Odds move until bag lock; capped at 10%",
+    body: "Your odds move until the bag locks. The odds cap (10%) is max draw weight share vs the live ticket bag, not a locked win chance for the rest of the window. Past the cap, more spending buys more $BELL but no more draw weight.",
   },
   {
     id: "burn",

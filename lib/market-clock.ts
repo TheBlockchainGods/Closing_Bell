@@ -39,6 +39,14 @@ export const BELL_SCHEDULE: BellDefinition[] = [
 
 export const INCLUDE_LUNCH_BELL = true;
 
+/** Seconds before the bell when the ticket bag freezes for the draw. */
+export const SNAPSHOT_LEAD_SECONDS = 120;
+
+/** Instant when the ticket bag locks for a given bell. */
+export function bagLockAt(bellAt: Date): Date {
+  return new Date(bellAt.getTime() - SNAPSHOT_LEAD_SECONDS * 1000);
+}
+
 const etPartsFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: ET_ZONE,
   hour12: false,
