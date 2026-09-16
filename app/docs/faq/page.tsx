@@ -84,10 +84,10 @@ export default function DocsFaqPage() {
 
       <DocsH2 id="aws">What runs on AWS?</DocsH2>
       <DocsP>
-        Documented path: Lightsail Container Service (
+        API and Telegram: Lightsail Container Service (
         <DocsCode>closing-bell-api</DocsCode>) and Lightsail Postgres in{" "}
-        <DocsCode>us-west-2</DocsCode>, exposing the public API. The Next.js site
-        is documented for Vercel.{" "}
+        <DocsCode>us-west-2</DocsCode>. Next.js site: AWS Amplify Hosting for{" "}
+        <DocsCode>closingbellonrh.com</DocsCode>.{" "}
         <Link
           href="/docs/architecture"
           className="text-brass-200 hover:text-tape"
@@ -107,7 +107,8 @@ export default function DocsFaqPage() {
       <DocsUl>
         <li>
           <DocsCode>/pot</DocsCode> · <DocsCode>/odds</DocsCode> ·{" "}
-          <DocsCode>/ladder</DocsCode> · <DocsCode>/next</DocsCode>
+          <DocsCode>/ladder</DocsCode> · <DocsCode>/next</DocsCode> ·{" "}
+          <DocsCode>/how</DocsCode>
         </li>
       </DocsUl>
 

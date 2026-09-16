@@ -3,7 +3,7 @@
  *
  * NEXT_PUBLIC_TOKEN_ADDRESS  0x… contract
  * NEXT_PUBLIC_CHART_URL      DexScreener (or other) chart link
- * NEXT_PUBLIC_API_BASE       Public API for /verify fetch
+ * NEXT_PUBLIC_API_BASE       Public API origin (Lightsail). Browser uses /cb-api.
  * NEXT_PUBLIC_DRY_RUN_PAYOUTS  When true (default), show one sitewide payouts banner
  */
 

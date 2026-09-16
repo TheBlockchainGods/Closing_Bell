@@ -1,9 +1,9 @@
 /**
  * Domain types for Closing Bell.
  *
- * Every shape here is intentionally chain-agnostic: today it is filled by
- * `lib/mock-data.ts`, later it can be filled by an indexer or RPC reads
- * without touching a single component.
+ * Pot, odds, ladder, and winners are filled from the live API via
+ * `lib/bell-store.tsx`. Copy and After Hours targets still live in
+ * `lib/mock-data.ts`.
  */
 
 export type BellKind = "open" | "lunch" | "close";
@@ -43,7 +43,7 @@ export interface PotSnapshot {
   inPotGme: number;
   /** Fees earned but not yet swept into the pot. */
   accruingGme: number;
-  /** Mock GME price used for the USD readout. */
+  /** GME price used for the USD readout (from the API). */
   gmePriceUsd: number;
   /** All-time GME paid out across settled rings. */
   totalPaidOutGme: number;
@@ -142,10 +142,7 @@ export interface LadderRow {
   isYou: boolean;
 }
 
-/**
- * Result of looking up an arbitrary address. Mocked, but derived from the
- * address itself so a given address always reports the same share.
- */
+/** Result of looking up an arbitrary address against the live ticket bag. */
 export interface WalletLookup {
   address: string;
   /** Share of all tickets out, before the cap. */

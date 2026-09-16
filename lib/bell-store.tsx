@@ -8,90 +8,27 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 
+import { publicApiBase } from "./api-base";
 import {
-  AFTER_HOURS,
-  MARKET,
-  POT,
-  STANDING_SHARES,
-  TICKETS_PER_GME,
-  WALLET,
-  WINNERS,
-  mockLookup,
-} from "./mock-data";
-import { nextBell } from "./market-clock";
+  fetchLiveOdds,
+  fetchLiveSnapshot,
+  mergeLiveLadder,
+  type LiveOdds,
+  type LiveSnapshot,
+} from "./live-api";
+import { AFTER_HOURS, isAddressLike } from "./mock-data";
 import type {
-  BellKind,
+  AfterHoursSnapshot,
   LadderRow,
   WalletLookup,
   WinnerRecord,
 } from "./types";
 
-/**
- * Mocked application state for the landing page.
- *
- * This is the single seam between the UI and a future chain integration:
- * replace the reducers below with contract writes and the polling block with
- * indexer subscriptions, and every component keeps working unchanged.
- */
-
 export type RingPhase = "idle" | "ringing" | "settled";
-
-interface StoreValue {
-  inPotGme: number;
-  accruingGme: number;
-  gmePriceUsd: number;
-  bellPriceUsd: number;
-  windowVolumeGme: number;
-  totalTickets: number;
-  holders: number;
-  oddsCap: number;
-
-  /** All-time GME paid out across settled rings (includes demo rings this session). */
-  totalPaidOutGme: number;
-
-  /** After Hours is a roadmap item, so these are targets rather than balances. */
-  afterHoursStatus: "live" | "coming-soon";
-  afterHoursTargetStakedBell: number;
-  afterHoursTargetPotGme: number;
-  afterHoursTargetStakedShare: number;
-
-  /**
-   * The address the visitor is inspecting. Set by pasting an address or by the
-   * mock connect shortcut; no wallet library is involved either way.
-   */
-  watched: WalletLookup | null;
-  /** True when the address came from the connect shortcut rather than a paste. */
-  watchedViaConnect: boolean;
-  /** Ladder for the current window, cap applied, watched address folded in. */
-  ladder: LadderRow[];
-  /** The watched address's ladder row, sized to the current window. */
-  myRow: LadderRow | null;
-
-  winners: WinnerRecord[];
-  ringPhase: RingPhase;
-  ringId: number;
-  /** Client epoch ms when the current demo ring began; 0 when idle. */
-  ringStartedAt: number;
-  lastWinner: WinnerRecord | null;
-
-  /** Total GME payable on the next ring. */
-  potTotalGme: number;
-
-  /** Epoch ms when the post-ring cooldown clears; 0 when free. */
-  ringCooldownUntil: number;
-
-  watch: (address: string) => void;
-  clearWatch: () => void;
-  connectShortcut: () => void;
-  ring: () => void;
-  /** Ends the ring ceremony (after gavel clip `ended`) and starts cooldown. */
-  finishRing: () => void;
-  dismissRing: () => void;
-}
-
-const BellContext = createContext<StoreValue | null>(null);
+export type FeedStatus = "loading" | "live" | "offline";
 
 interface MutableState {
   inPotGme: number;
@@ -100,170 +37,200 @@ interface MutableState {
   windowVolumeGme: number;
   totalTickets: number;
   totalPaidOutGme: number;
+  oddsCap: number;
 }
 
-const INITIAL: MutableState = {
-  inPotGme: POT.inPotGme,
-  accruingGme: POT.accruingGme,
-  gmePriceUsd: POT.gmePriceUsd,
-  windowVolumeGme: MARKET.windowVolumeGme,
-  totalTickets: MARKET.totalTickets,
-  totalPaidOutGme: POT.totalPaidOutGme,
+interface BellContextValue extends MutableState {
+  potTotalGme: number;
+  afterHours: AfterHoursSnapshot;
+  afterHoursStatus: AfterHoursSnapshot["status"];
+  afterHoursTargetStakedBell: number;
+  afterHoursTargetPotGme: number;
+  afterHoursTargetStakedShare: number;
+  winners: WinnerRecord[];
+  lastWinner: WinnerRecord | null;
+  ringPhase: RingPhase;
+  ringId: number;
+  ringStartedAt: number;
+  ringCooldownUntil: number;
+  ladder: LadderRow[];
+  watched: WalletLookup | null;
+  watchedViaConnect: boolean;
+  myRow: LadderRow | null;
+  sampleLookups: string[];
+  liveApi: boolean;
+  fixtureMode: boolean;
+  feedStatus: FeedStatus;
+  oddsLookupError: string | null;
+  ring: () => void;
+  finishRing: () => void;
+  dismissRing: () => void;
+  watch: (address: string) => void;
+  connectShortcut: () => void;
+  clearWatch: () => void;
+}
+
+const EMPTY: MutableState = {
+  inPotGme: 0,
+  accruingGme: 0,
+  gmePriceUsd: 0,
+  windowVolumeGme: 0,
+  totalTickets: 0,
+  totalPaidOutGme: 0,
+  oddsCap: 0.1,
 };
 
-/** Demo ring cooldown after the gavel clip finishes, in ms. */
+const BellContext = createContext<BellContextValue | null>(null);
+
 const RING_COOLDOWN_MS = 4_000;
-/** Settle the mock pot shortly after the strike starts (not tied to clip length). */
-const RING_SETTLE_MS = 900;
-/** Safety only: force-release if `ended` never fires. */
 const RING_SAFETY_MS = 60_000;
+const LIVE_POLL_MS = 15_000;
 
-function pickWeightedWinner(
-  entrants: { address: string; tickets: number }[],
-): { address: string; tickets: number } | null {
-  const pool = entrants.filter((entrant) => entrant.tickets > 0);
-  if (pool.length === 0) return null;
-  const total = pool.reduce((sum, entrant) => sum + entrant.tickets, 0);
-  let cursor = Math.random() * total;
-  for (const entrant of pool) {
-    cursor -= entrant.tickets;
-    if (cursor <= 0) return entrant;
-  }
-  return pool[pool.length - 1];
+function applySnapshot(snap: LiveSnapshot): MutableState {
+  return {
+    inPotGme: snap.pot.inPotGme,
+    accruingGme: snap.pot.accruingGme,
+    gmePriceUsd: snap.pot.gmePriceUsd,
+    windowVolumeGme: snap.window.volumeGme,
+    totalTickets: snap.window.ticketsOut,
+    totalPaidOutGme: snap.totalPaidOutGme,
+    oddsCap: snap.window.oddsCap,
+  };
 }
 
-/**
- * Ladder rows with the per-wallet cap applied.
- *
- * Rows are held as shares of the window rather than absolute counts, so the
- * ladder stays coherent at any window size, including the moment right after a
- * ring wipes every ticket. Both numbers are kept: the odds actually paid, and
- * whether the cap is the thing holding them down.
- */
-function buildLadder(
-  totalTickets: number,
-  watched: WalletLookup | null,
-): LadderRow[] {
-  const rows = STANDING_SHARES.map((row) => ({
-    address: row.address,
-    share: row.share,
-    isYou: false,
-  }));
-
-  if (watched) {
-    const existing = rows.find(
-      (row) => row.address.toLowerCase() === watched.address.toLowerCase(),
-    );
-    if (existing) {
-      existing.isYou = true;
-    } else {
-      rows.push({
-        address: watched.address,
-        share: watched.share,
-        isYou: true,
-      });
-    }
+function lookupFromOdds(address: string, odds: LiveOdds | null): WalletLookup {
+  if (odds) {
+    return {
+      address: odds.address,
+      share: odds.share,
+      onLadder: odds.tickets > 0,
+    };
   }
-
-  return rows
-    .sort((a, b) => b.share - a.share)
-    .map((row, index) => {
-      const tickets = Math.round(row.share * totalTickets);
-      return {
-        address: row.address,
-        isYou: row.isYou,
-        share: row.share,
-        rank: index + 1,
-        tickets,
-        spentInWindowGme: tickets / TICKETS_PER_GME,
-        odds: Math.min(MARKET.oddsCap, row.share),
-        capped: row.share > MARKET.oddsCap,
-      };
-    });
+  return { address, share: 0, onLadder: false };
 }
 
-export function BellProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<MutableState>(INITIAL);
-  const [winners, setWinners] = useState<WinnerRecord[]>(WINNERS);
+export function BellProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<MutableState>(EMPTY);
+  const [winners, setWinners] = useState<WinnerRecord[]>([]);
+  const [liveLadder, setLiveLadder] = useState<LadderRow[]>([]);
+  const [sampleLookups, setSampleLookups] = useState<string[]>([]);
+  const [lastWinner, setLastWinner] = useState<WinnerRecord | null>(null);
   const [ringPhase, setRingPhase] = useState<RingPhase>("idle");
   const [ringId, setRingId] = useState(0);
   const [ringStartedAt, setRingStartedAt] = useState(0);
-  const [lastWinner, setLastWinner] = useState<WinnerRecord | null>(null);
+  const [ringCooldownUntil, setRingCooldownUntil] = useState(0);
   const [watched, setWatched] = useState<WalletLookup | null>(null);
   const [watchedViaConnect, setWatchedViaConnect] = useState(false);
-  const [cooldownUntil, setCooldownUntil] = useState(0);
-
-  const phaseRef = useRef<RingPhase>("idle");
-  const stateRef = useRef(state);
-  const watchedRef = useRef(watched);
-  const cooldownRef = useRef(0);
+  const [liveOdds, setLiveOdds] = useState<LiveOdds | null>(null);
+  const [liveApi, setLiveApi] = useState(false);
+  const [fixtureMode, setFixtureMode] = useState(true);
+  const [feedStatus, setFeedStatus] = useState<FeedStatus>("loading");
+  const [oddsLookupError, setOddsLookupError] = useState<string | null>(null);
   const timers = useRef<number[]>([]);
+  const phaseRef = useRef<RingPhase>("idle");
+  const cooldownRef = useRef(0);
+  const watchedRef = useRef<WalletLookup | null>(null);
+  watchedRef.current = watched;
+
+  const apiBase = publicApiBase();
 
   useEffect(() => {
     phaseRef.current = ringPhase;
   }, [ringPhase]);
 
   useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+    cooldownRef.current = ringCooldownUntil;
+  }, [ringCooldownUntil]);
 
   useEffect(() => {
-    watchedRef.current = watched;
-  }, [watched]);
+    if (!apiBase) {
+      setFeedStatus("offline");
+      setLiveApi(false);
+      return;
+    }
 
-  useEffect(() => {
-    cooldownRef.current = cooldownUntil;
-  }, [cooldownUntil]);
+    let cancelled = false;
 
-  useEffect(
-    () => () => {
-      timers.current.forEach((id) => window.clearTimeout(id));
+    const pull = async () => {
+      const snap = await fetchLiveSnapshot(apiBase);
+      if (cancelled) return;
+      if (!snap) {
+        setLiveApi(false);
+        setFeedStatus((prev) => (prev === "live" ? "live" : "offline"));
+        return;
+      }
+      setLiveApi(true);
+      setFeedStatus("live");
+      setFixtureMode(snap.fixtureMode);
+      setState(applySnapshot(snap));
+      setWinners(snap.winners);
+      setLiveLadder(snap.ladder);
+      setSampleLookups(snap.sampleLookups);
+
+      const current = watchedRef.current;
+      if (current) {
+        const odds = await fetchLiveOdds(apiBase, current.address);
+        if (cancelled) return;
+        if (odds) {
+          setLiveOdds(odds);
+          setOddsLookupError(null);
+          setWatched(lookupFromOdds(current.address, odds));
+        }
+      }
+    };
+
+    void pull();
+    const id = window.setInterval(() => {
+      void pull();
+    }, LIVE_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [apiBase]);
+
+  const watch = useCallback(
+    (raw: string) => {
+      const address = raw.trim();
+      if (!isAddressLike(address)) return;
+      setWatchedViaConnect(false);
+      setOddsLookupError(null);
+
+      if (!apiBase) {
+        setLiveOdds(null);
+        setWatched({ address, share: 0, onLadder: false });
+        setOddsLookupError("API is not configured.");
+        return;
+      }
+
+      setWatched({ address, share: 0, onLadder: false });
+      void (async () => {
+        const odds = await fetchLiveOdds(apiBase, address);
+        if (odds) {
+          setLiveOdds(odds);
+          setOddsLookupError(null);
+          setWatched(lookupFromOdds(address, odds));
+          return;
+        }
+        setLiveOdds(null);
+        setOddsLookupError("Could not read odds from the API.");
+      })();
     },
-    [],
+    [apiBase],
   );
 
-  /** Session drift: the pot never stands still while the tape is running. */
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      if (phaseRef.current === "ringing") return;
-      setState((prev) => {
-        const accrued = 0.42 + Math.random() * 2.1;
-        const sweep = Math.random() < 0.34 ? prev.accruingGme * 0.55 : 0;
-        return {
-          ...prev,
-          accruingGme: prev.accruingGme + accrued - sweep,
-          inPotGme: prev.inPotGme + sweep,
-          windowVolumeGme: prev.windowVolumeGme + accrued * 26,
-          totalTickets:
-            prev.totalTickets + Math.round(600 + Math.random() * 2600),
-          gmePriceUsd: Math.max(
-            1,
-            prev.gmePriceUsd + (Math.random() - 0.48) * 0.05,
-          ),
-        };
-      });
-    }, 2600);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  const watch = useCallback((address: string) => {
-    const found = mockLookup(address);
-    if (!found) return;
-    setWatched(found);
-    setWatchedViaConnect(false);
-  }, []);
+  const connectShortcut = useCallback(() => {
+    const sample = sampleLookups[0];
+    if (!sample) return;
+    setWatchedViaConnect(true);
+    watch(sample);
+  }, [sampleLookups, watch]);
 
   const clearWatch = useCallback(() => {
     setWatched(null);
     setWatchedViaConnect(false);
-  }, []);
-
-  /** Fills the address field from a "wallet", without any wallet library. */
-  const connectShortcut = useCallback(() => {
-    const found = mockLookup(WALLET.address);
-    if (!found) return;
-    setWatched(found);
-    setWatchedViaConnect(true);
+    setLiveOdds(null);
+    setOddsLookupError(null);
   }, []);
 
   const ring = useCallback(() => {
@@ -276,50 +243,6 @@ export function BellProvider({ children }: { children: React.ReactNode }) {
     setRingId((id) => id + 1);
     setRingStartedAt(Date.now());
 
-    const settle = window.setTimeout(() => {
-      // Read the snapshot outside the updater: state updaters must stay pure.
-      const current = stateRef.current;
-      const watchedNow = watchedRef.current;
-      const upcoming = nextBell(new Date());
-      const kind: BellKind = upcoming?.kind ?? "close";
-      const payout = current.inPotGme + current.accruingGme;
-
-      const ladder = buildLadder(current.totalTickets, watchedNow);
-      const drawn = pickWeightedWinner(ladder);
-
-      if (drawn) {
-        const row = ladder.find((entry) => entry.address === drawn.address);
-        const record: WinnerRecord = {
-          id: `ring-demo-${Date.now()}`,
-          address: drawn.address,
-          kind,
-          amountGme: payout,
-          ticketsAtRing: Math.round(drawn.tickets),
-          oddsAtRing: row?.odds ?? 0,
-          ringedAt: new Date().toISOString(),
-          simulated: true,
-        };
-        setLastWinner(record);
-        setWinners((prevWinners) => [record, ...prevWinners].slice(0, 6));
-      }
-
-      setState((prev) => ({
-        ...prev,
-        inPotGme: 0,
-        accruingGme: 0,
-        totalTickets: 0,
-        windowVolumeGme: 0,
-        totalPaidOutGme: prev.totalPaidOutGme + payout,
-      }));
-
-      if (phaseRef.current === "ringing") {
-        setRingPhase("settled");
-        phaseRef.current = "settled";
-      }
-    }, RING_SETTLE_MS);
-
-    // Do not hide the gavel clip with a short release timer. finishRing() runs
-    // from the video `ended` handler. Safety unlock only.
     const safety = window.setTimeout(() => {
       if (phaseRef.current === "idle") return;
       setRingPhase("idle");
@@ -327,10 +250,9 @@ export function BellProvider({ children }: { children: React.ReactNode }) {
       setRingStartedAt(0);
       const until = Date.now() + RING_COOLDOWN_MS;
       cooldownRef.current = until;
-      setCooldownUntil(until);
+      setRingCooldownUntil(until);
     }, RING_SAFETY_MS);
-
-    timers.current.push(settle, safety);
+    timers.current.push(safety);
   }, []);
 
   const finishRing = useCallback(() => {
@@ -342,76 +264,95 @@ export function BellProvider({ children }: { children: React.ReactNode }) {
     setRingStartedAt(0);
     const until = Date.now() + RING_COOLDOWN_MS;
     cooldownRef.current = until;
-    setCooldownUntil(until);
+    setRingCooldownUntil(until);
   }, []);
 
   const dismissRing = useCallback(() => {
+    setLastWinner(null);
     setRingPhase("idle");
     phaseRef.current = "idle";
     setRingStartedAt(0);
-    setLastWinner(null);
   }, []);
 
-  const value = useMemo<StoreValue>(() => {
-    const ladder = buildLadder(state.totalTickets, watched);
-    const mine = ladder.find((row) => row.isYou);
+  useEffect(() => {
+    const ids = timers.current;
+    return () => {
+      ids.forEach((id) => window.clearTimeout(id));
+    };
+  }, []);
 
-    return {
+  const ladder = useMemo(
+    () => mergeLiveLadder(liveLadder, watched?.address ?? null, liveOdds),
+    [liveLadder, liveOdds, watched],
+  );
+
+  const myRow = useMemo(
+    () => ladder.find((row) => row.isYou) ?? null,
+    [ladder],
+  );
+
+  const value = useMemo<BellContextValue>(
+    () => ({
       ...state,
-      bellPriceUsd: MARKET.bellPriceUsd,
-      holders: MARKET.holders,
-      oddsCap: MARKET.oddsCap,
-
+      potTotalGme: state.inPotGme + state.accruingGme,
+      afterHours: AFTER_HOURS,
       afterHoursStatus: AFTER_HOURS.status,
       afterHoursTargetStakedBell: AFTER_HOURS.totalStakedBell,
       afterHoursTargetPotGme: AFTER_HOURS.weeklyPotGme,
       afterHoursTargetStakedShare: AFTER_HOURS.targetStakedShare,
-
-      watched,
-      watchedViaConnect,
-      ladder,
-      myRow: mine ?? null,
-
       winners,
+      lastWinner,
       ringPhase,
       ringId,
       ringStartedAt,
-      lastWinner,
-      potTotalGme: state.inPotGme + state.accruingGme,
-      ringCooldownUntil: cooldownUntil,
-
-      watch,
-      clearWatch,
-      connectShortcut,
+      ringCooldownUntil,
+      ladder,
+      watched,
+      watchedViaConnect,
+      myRow,
+      sampleLookups,
+      liveApi,
+      fixtureMode,
+      feedStatus,
+      oddsLookupError,
       ring,
       finishRing,
       dismissRing,
-    };
-  }, [
-    state,
-    watched,
-    watchedViaConnect,
-    winners,
-    ringPhase,
-    ringId,
-    ringStartedAt,
-    lastWinner,
-    cooldownUntil,
-    watch,
-    clearWatch,
-    connectShortcut,
-    ring,
-    finishRing,
-    dismissRing,
-  ]);
+      watch,
+      connectShortcut,
+      clearWatch,
+    }),
+    [
+      state,
+      winners,
+      lastWinner,
+      ringPhase,
+      ringId,
+      ringStartedAt,
+      ringCooldownUntil,
+      ladder,
+      watched,
+      watchedViaConnect,
+      myRow,
+      sampleLookups,
+      liveApi,
+      fixtureMode,
+      feedStatus,
+      oddsLookupError,
+      ring,
+      finishRing,
+      dismissRing,
+      watch,
+      connectShortcut,
+      clearWatch,
+    ],
+  );
 
   return <BellContext.Provider value={value}>{children}</BellContext.Provider>;
 }
 
-export function useBell(): StoreValue {
-  const context = useContext(BellContext);
-  if (!context) {
-    throw new Error("useBell must be used inside <BellProvider>");
-  }
-  return context;
+export function useBell(): BellContextValue {
+  const ctx = useContext(BellContext);
+  if (!ctx) throw new Error("useBell must be used inside BellProvider");
+  return ctx;
 }

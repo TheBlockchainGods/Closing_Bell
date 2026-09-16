@@ -35,7 +35,7 @@ export function Hero() {
 
   const onRing = () => {
     if (ringLocked) return;
-    // User gesture: unmute / start hero audio, then play gavel MP4 + settle on this page.
+    // User gesture: unmute / start hero audio, then play the gavel MP4.
     clip.enableSound();
     bell.ring();
   };
@@ -126,13 +126,13 @@ export function Hero() {
                 size="lg"
                 onClick={onRing}
                 disabled={ringLocked}
-                aria-label="Ring the Bell: play the gavel strike and settle the pot on this page"
+                aria-label="Ring the Bell: play the gavel strike on this page"
                 title={
                   strikePlaying || bell.ringPhase !== "idle"
                     ? "The gavel strike is playing"
                     : cooldownSec > 0
                       ? `Cooldown ${cooldownSec}s`
-                      : "Plays the gavel clip, turns on hero sound, and settles the pot on this page"
+                      : "Plays the gavel clip and turns on hero sound. The pot stays on the API."
                 }
               >
                 {strikePlaying || bell.ringPhase !== "idle"

@@ -49,9 +49,11 @@ export default function DocsArchitecturePage() {
           .
         </li>
         <li>
-          Hosting: README documents deploy to <strong>Vercel</strong> (
-          <DocsCode>next build</DocsCode>). Point{" "}
-          <DocsCode>NEXT_PUBLIC_API_BASE</DocsCode> at the public API URL.
+          Hosting: AWS Amplify Hosting (GitHub → <DocsCode>next build</DocsCode>
+          , custom domain <DocsCode>closingbellonrh.com</DocsCode>). Point{" "}
+          <DocsCode>NEXT_PUBLIC_API_BASE</DocsCode> at the public Lightsail API
+          URL. The site proxies that origin at <DocsCode>/cb-api</DocsCode>. See{" "}
+          <DocsCode>docs/AWS_HOSTING.md</DocsCode>.
         </li>
         <li>
           Launch knobs: <DocsCode>NEXT_PUBLIC_TOKEN_ADDRESS</DocsCode>,{" "}
@@ -106,11 +108,11 @@ export default function DocsArchitecturePage() {
       </DocsUl>
       <DocsCallout title="Do not invent more AWS" tone="note">
         <p>
-          This project&apos;s documented cloud path is Lightsail containers +
-          Lightsail Postgres in us-west-2. Do not assume Lambda, ECS, or other
-          services unless you deploy them yourself. Railway appears in older
-          backend notes as an alternate path; Lightsail is the AWS path that
-          ships with this repo&apos;s deploy guide.
+          Documented cloud path: Lightsail containers + Lightsail Postgres in
+          us-west-2 for the API, AWS Amplify Hosting for this Next.js site. Do
+          not assume ECS, extra Lambdas, or a second API host unless you deploy
+          them yourself. Railway appears in older backend notes as an alternate
+          path.
         </p>
       </DocsCallout>
 

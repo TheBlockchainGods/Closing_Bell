@@ -17,6 +17,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://closingbellonrh.com"),
   title: "Closing Bell ($BELL) · Ring the bell, take the pot",
   description:
     "Closing Bell is a market-ritual token on the GME pair. Buy in the window to earn Bell tickets, watch the Bell Pot build, and see it paid out in GME when the bell rings at 9:30 and 16:00 ET.",

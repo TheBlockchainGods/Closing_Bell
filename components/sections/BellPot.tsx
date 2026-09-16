@@ -18,15 +18,37 @@ import {
 import { BELL_LABEL } from "@/lib/market-clock";
 import { EASE_BELL } from "@/lib/motion";
 
-function LivePill() {
+function LivePill({
+  status,
+  fixtureMode,
+}: {
+  status: "loading" | "live" | "offline";
+  fixtureMode: boolean;
+}) {
+  const live = status === "live";
+  const label =
+    status === "loading"
+      ? "Reading the pot"
+      : status === "offline"
+        ? "API unreachable"
+        : fixtureMode
+          ? "Fixture feed"
+          : "Pot updating live";
+
   return (
     <span className="inline-flex items-center gap-2 rounded-xs border border-brass-700/60 bg-brass-500/8 px-3 py-2">
       <span className="relative flex size-1.5" aria-hidden="true">
-        <span className="absolute inset-0 animate-ping rounded-full bg-tape/70" />
-        <span className="relative size-1.5 rounded-full bg-tape" />
+        {live ? (
+          <span className="absolute inset-0 animate-ping rounded-full bg-tape/70" />
+        ) : null}
+        <span
+          className={`relative size-1.5 rounded-full ${
+            live ? "bg-tape" : status === "offline" ? "bg-ember-400" : "bg-brass-500"
+          }`}
+        />
       </span>
       <span className="font-mono text-[0.63rem] font-semibold uppercase tracking-[0.18em] text-brass-200">
-        Pot updating live
+        {label}
       </span>
     </span>
   );
@@ -83,7 +105,9 @@ export function BellPot() {
       eyebrow="Live Bell Pot"
       title="The pot, live and in the open"
       lead="Every buy on the GME pair routes a slice into the Bell Pot, wherever you trade. It sits in the open, climbing, until the next bell empties it into one wallet."
-      aside={<LivePill />}
+      aside={
+        <LivePill status={bell.feedStatus} fixtureMode={bell.fixtureMode} />
+      }
     >
       <div className="panel shadow-panel overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">

@@ -17,7 +17,7 @@ import {
   formatCountdownClock,
   remainingUntil,
 } from "@/lib/market-clock";
-import { PONS_URL, SAMPLE_LOOKUPS, isAddressLike } from "@/lib/mock-data";
+import { PONS_URL, isAddressLike } from "@/lib/mock-data";
 import { EASE_BELL } from "@/lib/motion";
 import { useBellClock, useNow } from "@/lib/use-clock";
 import { motion, useReducedMotion } from "framer-motion";
@@ -115,6 +115,15 @@ function TicketLadder() {
       </div>
 
       <ul className="divide-y divide-line">
+        {bell.ladder.length === 0 ? (
+          <li className="px-5 py-6 text-[0.88rem] leading-relaxed text-ink-2 sm:px-6">
+            {bell.feedStatus === "loading"
+              ? "Reading the ticket ladder from the API."
+              : bell.feedStatus === "offline"
+                ? "Could not reach the ladder feed."
+                : "No tickets in this window yet. Buys on the GME pair mint them."}
+          </li>
+        ) : null}
         {bell.ladder.map((row) => (
           <li
             key={row.address}
@@ -285,8 +294,8 @@ export function YourOdds() {
         <p>Your odds move until the bag locks.</p>
         <p>Buying earlier does not freeze your % until the bell.</p>
         <p>
-          The odds cap (10%) is max draw weight share vs the live ticket bag. It
-          does not lock a 10% win chance for the rest of the window.
+          The odds cap ({formatPct(bell.oddsCap)}) is max draw weight share vs the live ticket bag. It
+          does not lock a {formatPct(bell.oddsCap)} win chance for the rest of the window.
         </p>
         <p>
           What counts is the ticket bag at bag lock (snapshot), which you can{" "}
@@ -333,7 +342,12 @@ export function YourOdds() {
                   setDraft("");
                   setTouched(false);
                 }}
-                title="Fill a sample wallet address. Nothing is signed."
+                disabled={bell.sampleLookups.length === 0}
+                title={
+                  bell.sampleLookups.length === 0
+                    ? "No sample wallet until the ladder has tickets"
+                    : "Fill a sample wallet address. Nothing is signed."
+                }
               >
                 Use sample wallet
               </Button>
@@ -346,22 +360,33 @@ export function YourOdds() {
 
             <div className="mt-6 border-t border-line pt-5">
               <p className="label-mono">Or try a sample address</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {SAMPLE_LOOKUPS.map((address) => (
-                  <button
-                    key={address}
-                    type="button"
-                    onClick={() => {
-                      setDraft(address);
-                      setTouched(false);
-                      bell.watch(address);
-                    }}
-                    className="rounded-xs border border-line-strong px-2.5 py-1.5 font-mono text-[0.66rem] font-medium text-ink-2 transition-colors hover:border-brass-600 hover:bg-brass-500/10 hover:text-brass-100"
-                  >
-                    {shortAddress(address)}
-                  </button>
-                ))}
-              </div>
+              {bell.sampleLookups.length === 0 ? (
+                <p className="mt-3 text-[0.82rem] leading-relaxed text-ink-3">
+                  No sample wallets until the live ladder has tickets.
+                </p>
+              ) : (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {bell.sampleLookups.map((address) => (
+                    <button
+                      key={address}
+                      type="button"
+                      onClick={() => {
+                        setDraft(address);
+                        setTouched(false);
+                        bell.watch(address);
+                      }}
+                      className="rounded-xs border border-line-strong px-2.5 py-1.5 font-mono text-[0.66rem] font-medium text-ink-2 transition-colors hover:border-brass-600 hover:bg-brass-500/10 hover:text-brass-100"
+                    >
+                      {shortAddress(address)}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {bell.oddsLookupError ? (
+                <p className="mt-3 text-[0.82rem] leading-relaxed text-ember-400">
+                  {bell.oddsLookupError}
+                </p>
+              ) : null}
             </div>
           </div>
 

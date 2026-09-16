@@ -11,12 +11,11 @@ import type {
 } from "./types";
 
 /**
- * Everything in this file is mocked. Values are deterministic so the server
- * render and the first client render always agree; live drift only starts
- * after mount inside `lib/bell-store.tsx`.
+ * Copy, protocol constants, and After Hours targets.
  *
- * Swapping to live data means replacing these constants with a fetch or a
- * contract read that returns the same shapes.
+ * Do not use POT, MARKET, STANDINGS, WALLET, or WINNERS as the UI source of
+ * truth. The live store reads pot, odds, ladder, and winners from the API
+ * (fixture responses are fine until launch).
  */
 
 /** Placeholder until the real PONS trade link exists. */

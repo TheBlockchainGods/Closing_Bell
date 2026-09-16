@@ -63,6 +63,12 @@ function Paid({ winner }: { winner: WinnerRecord }) {
 export function RecentWinners() {
   const bell = useBell();
   const total = bell.winners.reduce((sum, winner) => sum + winner.amountGme, 0);
+  const emptyCopy =
+    bell.feedStatus === "loading"
+      ? "Reading published rings from the API."
+      : bell.feedStatus === "offline"
+        ? "Could not reach the winners feed. The next successful poll will fill this list."
+        : "No rings published yet. The next settled bell will land here.";
 
   return (
     <Section
@@ -75,17 +81,24 @@ export function RecentWinners() {
         <div className="rounded-xs border border-line bg-floor-900 px-4 py-3">
           <p className="label-mono">Paid across last six rings</p>
           <p className="mt-1.5 font-display text-[1.3rem] font-bold tabular-nums text-brass-200">
-            {formatGme(total)}
-            <span className="ml-1.5 font-mono text-[0.65rem] text-ink-3">
-              GME
-            </span>
+            {bell.feedStatus === "loading" ? "Reading" : formatGme(total)}
+            {bell.feedStatus === "loading" ? null : (
+              <span className="ml-1.5 font-mono text-[0.65rem] text-ink-3">
+                GME
+              </span>
+            )}
           </p>
         </div>
       }
     >
       <div className="panel overflow-hidden">
+        {bell.winners.length === 0 ? (
+          <p className="px-5 py-8 text-[0.92rem] leading-relaxed text-ink-2 sm:px-6">
+            {emptyCopy}
+          </p>
+        ) : null}
         {/* Stacked rows for narrow screens */}
-        <ul className="sm:hidden">
+        <ul className={bell.winners.length === 0 ? "hidden" : "sm:hidden"}>
           {bell.winners.map((winner) => (
             <motion.li
               key={winner.id}
@@ -111,7 +124,13 @@ export function RecentWinners() {
         </ul>
 
         {/* Full table from small screens up */}
-        <table className="hidden w-full border-collapse text-left sm:table">
+        <table
+          className={
+            bell.winners.length === 0
+              ? "hidden"
+              : "hidden w-full border-collapse text-left sm:table"
+          }
+        >
           <caption className="sr-only">
             The six most recent Bell Pot payouts
           </caption>

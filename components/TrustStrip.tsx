@@ -17,6 +17,18 @@ export function TrustStrip() {
   const paidUsd = bell.totalPaidOutGme * bell.gmePriceUsd;
   const countdown = formatCountdownClock(clock.remaining);
   const nextLabel = clock.next?.label ?? "Next bell";
+  const jackpotPrimary =
+    bell.feedStatus === "loading"
+      ? "Reading"
+      : bell.feedStatus === "offline"
+        ? "Unreachable"
+        : `${formatGme(bell.potTotalGme)} GME`;
+  const paidPrimary =
+    bell.feedStatus === "loading"
+      ? "Reading"
+      : bell.feedStatus === "offline"
+        ? "Unreachable"
+        : `${formatGme(bell.totalPaidOutGme)} GME`;
 
   return (
     <div
@@ -26,9 +38,11 @@ export function TrustStrip() {
       <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         <StripCell
           label="Jackpot"
-          primary={`${formatGme(bell.potTotalGme)} GME`}
-          secondary={formatUsd(jackpotUsd)}
-          live
+          primary={jackpotPrimary}
+          secondary={
+            bell.feedStatus === "live" ? formatUsd(jackpotUsd) : "From the API"
+          }
+          live={bell.feedStatus === "live"}
         />
         <StripCell
           label="Next bell"
@@ -37,8 +51,10 @@ export function TrustStrip() {
         />
         <StripCell
           label="Total paid out"
-          primary={`${formatGme(bell.totalPaidOutGme)} GME`}
-          secondary={formatUsd(paidUsd)}
+          primary={paidPrimary}
+          secondary={
+            bell.feedStatus === "live" ? formatUsd(paidUsd) : "From the API"
+          }
         />
       </div>
     </div>

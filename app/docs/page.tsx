@@ -67,7 +67,7 @@ export default function DocsIntroPage() {
         </li>
         <li>
           Architecture and operations pages describe what software runs where,
-          including AWS Lightsail in us-west-2 when deployed that way.
+          including AWS Lightsail for the API and Amplify for this site.
         </li>
         <li>
           After any ring, use{" "}

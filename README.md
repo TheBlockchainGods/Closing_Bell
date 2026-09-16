@@ -2,7 +2,7 @@
 
 Landing page for Closing Bell, a market-ritual jackpot on the GME pair. Buy inside a trading window to earn Bell tickets, the Bell Pot builds in GME, and at the bell one wallet takes it all.
 
-The marketing site remains mock-driven (`lib/mock-data.ts`, `lib/bell-store.tsx`). Backend Phase 1–2 (indexer, ticket engine, API, Telegram bot, draw keeper) lives in [`backend/`](./backend/) — see [`docs/BACKEND.md`](./docs/BACKEND.md).
+The marketing site reads pot, ladder, odds, and winners from the public API when `NEXT_PUBLIC_API_BASE` is set (`lib/bell-store.tsx`). Mock data is the SSR snapshot and the fallback if the API is down. Backend Phase 1–2 (indexer, ticket engine, API, Telegram bot, draw keeper) lives in [`backend/`](./backend/) — see [`docs/BACKEND.md`](./docs/BACKEND.md).
 
 ## What changed in the ceremony visual pass
 
@@ -63,8 +63,11 @@ Optional launch env (root `.env.local`, see `.env.example`):
 ```bash
 NEXT_PUBLIC_TOKEN_ADDRESS=0x…
 NEXT_PUBLIC_CHART_URL=https://dexscreener.com/…
-NEXT_PUBLIC_API_BASE=http://localhost:8787
+NEXT_PUBLIC_API_BASE=https://closing-bell-api.qdwgj1kmyrm0a.us-west-2.cs.amazonlightsail.com
+# Local API instead: NEXT_PUBLIC_API_BASE=http://localhost:8787
 ```
+
+The browser calls `/cb-api/*`, which the Next server proxies to that origin (the Lightsail API does not send CORS headers).
 
 ```bash
 npm run build      # builds shared fairness package, then Next
@@ -89,25 +92,23 @@ MATCH is about the draw math matching the receipt. Payout settlement is separate
 
 Short rules summary in the footer; full docs: [/docs](http://localhost:3000/docs).
 
-## Deploy to Vercel
+## Deploy to AWS Amplify (not Vercel)
 
-The app is a stock Next.js App Router project with no environment variables, no server routes, and no external services, so deployment needs no configuration.
+Host the Next.js site on **AWS Amplify Hosting**. Keep the API on the existing Lightsail container. Full steps (buy domain, IAM, GitHub connect, DNS): [`docs/AWS_HOSTING.md`](./docs/AWS_HOSTING.md).
 
-**From the dashboard:** push the repo to GitHub, then import it at [vercel.com/new](https://vercel.com/new). Vercel detects Next.js and uses `next build` with the default output. Nothing to override.
+Amplify env (must be set before the first build so they bake into the client):
 
-**From the CLI:**
-
-```bash
-npm i -g vercel
-vercel          # preview deployment
-vercel --prod   # production deployment
+```
+NEXT_PUBLIC_API_BASE=https://closing-bell-api.qdwgj1kmyrm0a.us-west-2.cs.amazonlightsail.com
+NEXT_PUBLIC_DRY_RUN_PAYOUTS=true
 ```
 
-Notes for when this becomes a real product:
+`amplify.yml` at the repo root runs `npm ci` then `npm run build` on Node 22.
 
-- Fonts load through `next/font/google` at build time, so there are no runtime font requests and no CLS. No extra config needed on Vercel.
-- Every section is a client component because they all read the mock store. Once real data lands, the read-only sections (How it works, Recent winners, Footer) can move back to server components and stream.
-- Add a `metadataBase` and Open Graph image in `app/layout.tsx` before launch. The current metadata has title, description, and viewport only.
+Notes:
+
+- Fonts load through `next/font/google` at build time, so there are no runtime font requests and no CLS.
+- `metadataBase` is `https://closingbellonrh.com`. Add an Open Graph image in `app/layout.tsx` before marketing launch.
 
 ## Architecture
 
@@ -157,9 +158,9 @@ The art in `public/mascot/bellwether-podium.webp` is a white-keyed cutout from `
 
 `lib/types.ts` is the contract. Every component consumes those shapes and nothing else, so live data drops in at two seams:
 
-1. **`lib/mock-data.ts`** holds the initial snapshot: `POT`, `MARKET`, `STANDINGS`, `WINNERS`, `AFTER_HOURS`, plus `mockLookup` for address lookups. Replace these with a fetch or contract read that returns the same shapes. Keep the initial server render deterministic or hydration will complain.
+1. **`lib/bell-store.tsx`** polls `/cb-api` (proxied to `NEXT_PUBLIC_API_BASE`) for pot, window, ladder, winners, and odds. Mock constants in `lib/mock-data.ts` are the SSR snapshot and the fallback if the API is down.
 
-2. **`lib/bell-store.tsx`** owns the mutations. `watch` resolves an address, and `ring` settles the pot and wipes tickets. The pot drifts on a timer. `watch` becomes an indexer query and `ring` becomes an event subscription. The `ring` phase machine (`idle` to `ringing` to `settled`) already models the async shape a real settlement would have.
+2. **`lib/bell-store.tsx` mutations.** `watch` queries `/odds`. The demo `ring` control is still a client ceremony. Live polls pause while it runs, then the next fetch restores API figures.
 
 The countdown, formatters, and clock are real. `lib/market-clock.ts` computes actual Eastern Time bells including DST, weekend skips, and weekend-carry detection, so it stays as-is.
 
