@@ -164,9 +164,11 @@ Signal green `#00C805` is a brand accent for LIVE pips, nav/link hover, focus, a
 
 Simulated language is kept tight. The Ring control is the only place that says "Simulated draw…". Demo rings in the winners feed keep a small `simulated` mark on the row. Address lookup stays read-only without a long mock sermon. CA and Chart stay placeholder/disabled until `NEXT_PUBLIC_TOKEN_ADDRESS` and `NEXT_PUBLIC_CHART_URL` are set.
 
-**After Hours** carries one Coming soon badge and a bullish one-liner about the weekly GME pot. Stake controls stay disabled (`secondary`). The Roadmap section holds brass "Next" cards for what ships after the Bell Pot.
+**After Hours** carries one Coming soon badge and a bullish one-liner about the weekly GME pot. Stake controls stay disabled (`secondary`).
 
 **Launch chrome** sits under the trust tape (and mirrors in the footer): truncated CA + Copy, Chart, Docs (`/docs`), Verify.
+
+**What's live / what's next** (section `#roadmap`): launch features (Core Bell Pot, Telegram + Bellwether, Bell Alerts, Router tape) marked Live; After Hours (Next) and On-chain proof (Queued) are the real roadmap only.
 
 ### Lore voice
 

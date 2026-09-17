@@ -28,9 +28,15 @@ export default function DocsFaqPage() {
 
       <DocsH2 id="who-picks">Who picks the winner?</DocsH2>
       <DocsP>
-        The draw keeper runs{" "}
-        <DocsCode>closing-bell-draw-v1</DocsCode>. Humans do not pick wallets.
-        See{" "}
+        A person does not pick the winning wallet. The Closing Bell automated
+        draw service on AWS runs{" "}
+        <DocsCode>closing-bell-draw-v1</DocsCode> on the full ticket list from
+        when entries stopped. Same list + same formula, same wallet. Anyone can
+        re-run it on{" "}
+        <Link href="/verify" className="text-brass-200 hover:text-tape">
+          Verify
+        </Link>
+        . More detail:{" "}
         <Link href="/docs/draw" className="text-brass-200 hover:text-tape">
           Bag lock and the draw
         </Link>
@@ -111,6 +117,15 @@ export default function DocsFaqPage() {
           <DocsCode>/how</DocsCode>
         </li>
       </DocsUl>
+
+      <DocsH2 id="live-vs-next">Is After Hours live?</DocsH2>
+      <DocsP>
+        No. After Hours is what&apos;s next: stake through Friday Close for a
+        weekly GME pot. Core Bell Pot, verify, docs, Telegram, alerts, and
+        router tape are already live at launch. On-chain proof (CA, chart,
+        settlement receipts) waits for the live contract. No fake links before
+        that.
+      </DocsP>
 
       <DocsPager
         prev={{

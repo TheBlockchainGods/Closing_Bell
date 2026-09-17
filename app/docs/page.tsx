@@ -33,10 +33,16 @@ export default function DocsIntroPage() {
 
       <DocsCallout title="Who picks the winner">
         <p>
-          Nobody on the team picks a wallet. The draw keeper runs the published
-          formula <code className="font-mono text-brass-200">closing-bell-draw-v1</code>.
-          Operators claim fees, sweep the pot wallet, and (when live) send the
-          payout transaction to the formula winner. They do not choose who wins.
+          A person does not pick the winning wallet. The Closing Bell automated
+          draw service on AWS runs a fixed public math formula{" "}
+          <code className="font-mono text-brass-200">closing-bell-draw-v1</code>{" "}
+          on the full ticket list from when entries stopped for that jackpot.
+          Same list + same formula, same wallet. Anyone can re-run it on{" "}
+          <Link href="/verify" className="text-brass-200 hover:text-tape">
+            Verify
+          </Link>
+          . Operators claim fees, sweep the pot wallet, and (when live) send the
+          payout to that formula winner. They do not choose who wins.
         </p>
       </DocsCallout>
 
@@ -74,9 +80,24 @@ export default function DocsIntroPage() {
           <Link href="/verify" className="text-brass-200 hover:text-tape">
             /verify
           </Link>{" "}
-          to recompute the published receipt with the same math as the keeper.
+          to recompute the published receipt with the same public formula.
         </li>
       </DocsUl>
+
+      <DocsH2 id="live-vs-next">What&apos;s live vs what&apos;s next</DocsH2>
+      <DocsP>
+        Live at launch: Core Bell Pot (Open / Lunch / Close), this site,{" "}
+        <Link href="/verify" className="text-brass-200 hover:text-tape">
+          /verify
+        </Link>
+        , docs, Telegram + Bellwether bot, Bell Alerts, and router tape. Those
+        are not roadmap items.
+      </DocsP>
+      <DocsP>
+        What&apos;s next only: After Hours (Friday Close stake, weekly GME pot)
+        and on-chain proof (live CA, chart, settlement receipts when the
+        contract is live). No fake CA or chart links before that.
+      </DocsP>
 
       <DocsCallout title="Payouts mode">
         <p>

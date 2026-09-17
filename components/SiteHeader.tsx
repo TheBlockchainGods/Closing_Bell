@@ -12,7 +12,7 @@ const NAV = [
   { href: "#countdown", label: "Countdown" },
   { href: "#odds", label: "Your odds" },
   { href: "#how-it-works", label: "How it works" },
-  { href: "#roadmap", label: "Roadmap" },
+  { href: "#roadmap", label: "Live & next" },
   { href: "#after-hours", label: "After Hours" },
 ];
 
