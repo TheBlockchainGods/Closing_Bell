@@ -172,7 +172,7 @@ Simulated language is kept tight. The Ring control is the only place that says "
 
 Closing Bell borrows the thing everyone already knows from traditional markets: one ring that ended the day. On Robinhood Chain the market never sleeps, so the ritual can hit Open / Lunch / Close. Hero copy stays feeling + origin; mechanics live in How it works. No Robinhood feather, logo, or corporate biography, and no claim of official affiliation.
 
-**How the Bell Works strip** sits tight between Hero and Bell Pot: lore kicker (“Wall Street had one closing bell…”), Buy → Tickets → Pot → Ring with light scroll stagger and brass arrow pulse, `public/brand/how-the-bell-works.jpg`, plus live Telegram/X links for `@ClosingBellOnRH` (not PNG-only).
+**How the Bell Works strip** sits tight between Hero and Bell Pot: lore kicker (“Wall Street had one closing bell…”), Buy → Tickets → Pot → Ring with light scroll stagger and brass arrow pulse, and `public/brand/how-the-bell-works.jpg`. Telegram/X live in header/footer only (the infographic has no socials).
 
 **The address lookup** returns mocked data derived deterministically from the address bytes so hydration stays stable. Connect is a demo fill only.
 

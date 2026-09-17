@@ -4,7 +4,6 @@ import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { Reveal } from "@/components/ui/Reveal";
-import { COMMUNITY } from "@/lib/community";
 import { EASE_BELL } from "@/lib/motion";
 
 const STEPS = ["Buy", "Tickets", "Pot", "Ring"] as const;
@@ -36,7 +35,7 @@ function BrassArrow({ pulse }: { pulse: boolean }) {
 
 /**
  * Infographic strip between Hero and Bell Pot.
- * Lore kicker + diagram + live TG/X links. Light scroll motion only.
+ * Lore kicker + diagram. Community links live in header/footer only.
  */
 export function HowTheBellWorksStrip() {
   const reduceMotion = useReducedMotion();
@@ -89,7 +88,7 @@ export function HowTheBellWorksStrip() {
             >
               <Image
                 src="/brand/how-the-bell-works.jpg"
-                alt="How the bell works: buy $BELL with GME wherever you trade, earn tickets with a 10% odds cap, fees fill the Bell Pot in GME, then Open Lunch or Close rings and one wallet wins while tickets wipe."
+                alt="How Closing Bell works: buy BELL with GME, earn tickets, fees fill the pot, three jackpot rings a day"
                 width={1024}
                 height={576}
                 sizes="(max-width: 1100px) 100vw, 1100px"
@@ -97,42 +96,6 @@ export function HowTheBellWorksStrip() {
                 priority={false}
               />
             </motion.div>
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.2} className="mt-4">
-          <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6 sm:gap-y-2">
-            <a
-              href={COMMUNITY.telegram.href}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="rounded-xs font-mono text-[0.78rem] font-semibold tracking-[0.04em] text-brass-200 transition-colors hover:text-tape focus-visible:text-tape"
-            >
-              @ClosingBellOnRH
-            </a>
-            <span className="hidden text-ink-3 sm:inline" aria-hidden="true">
-              ·
-            </span>
-            <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-mono text-[0.68rem] uppercase tracking-[0.16em] text-ink-3">
-              <span>Join on</span>
-              <a
-                href={COMMUNITY.telegram.href}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="text-brass-300 transition-colors hover:text-tape focus-visible:text-tape"
-              >
-                Telegram
-              </a>
-              <span aria-hidden="true">&amp;</span>
-              <a
-                href={COMMUNITY.x.href}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="text-brass-300 transition-colors hover:text-tape focus-visible:text-tape"
-              >
-                X
-              </a>
-            </p>
           </div>
         </Reveal>
       </div>
