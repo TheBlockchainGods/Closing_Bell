@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { ShareJackpotModal } from "@/components/bell-pot/ShareJackpotModal";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
@@ -97,6 +99,9 @@ function Metric({
 export function BellPot() {
   const bell = useBell();
   const winner = bell.lastWinner;
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareSession, setShareSession] = useState(0);
+  const potUsd = bell.potTotalGme * bell.gmePriceUsd;
 
   return (
     <Section
@@ -112,7 +117,21 @@ export function BellPot() {
       <div className="panel shadow-panel overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <div className="border-b border-line px-5 py-8 sm:px-8 sm:py-10 lg:border-b-0 lg:border-r">
-            <p className="label-mono">Payable on the next ring</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="label-mono">Payable on the next ring</p>
+              <Button
+                variant="tape"
+                size="sm"
+                onClick={() => {
+                  setShareSession((n) => n + 1);
+                  setShareOpen(true);
+                }}
+                aria-haspopup="dialog"
+                aria-expanded={shareOpen}
+              >
+                Share
+              </Button>
+            </div>
             <div className="mt-4 flex flex-wrap items-end gap-x-4 gap-y-1">
               <AnimatedNumber
                 value={bell.potTotalGme}
@@ -126,7 +145,7 @@ export function BellPot() {
             </div>
             <p className="mt-5 flex flex-wrap items-baseline gap-x-2 text-ink-2">
               <AnimatedNumber
-                value={bell.potTotalGme * bell.gmePriceUsd}
+                value={potUsd}
                 format={formatUsd}
                 feel="pot"
                 className="font-display text-[1.6rem] font-bold tabular-nums text-ink"
@@ -278,6 +297,16 @@ export function BellPot() {
           {formatEtStamp(bell.winners[0].ringedAt)}.
         </p>
       ) : null}
+
+      <ShareJackpotModal
+        key={shareSession}
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        displayPotGme={bell.potTotalGme}
+        displayPotUsd={potUsd}
+        inPotGme={bell.inPotGme}
+        accruingGme={bell.accruingGme}
+      />
     </Section>
   );
 }

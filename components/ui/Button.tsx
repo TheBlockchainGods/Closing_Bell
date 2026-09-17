@@ -2,14 +2,14 @@ import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "reac
 
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost" | "signal";
+type Variant = "primary" | "secondary" | "ghost" | "signal" | "tape";
 type Size = "sm" | "md" | "lg";
 
 const base =
   "group relative inline-flex select-none items-center justify-center gap-2.5 " +
-  "whitespace-nowrap font-mono text-[0.72rem] font-semibold uppercase tracking-[0.16em] " +
-  "transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out " +
-  "active:translate-y-px disabled:pointer-events-none disabled:opacity-45";
+    "whitespace-nowrap font-mono text-[0.72rem] font-semibold uppercase tracking-[0.16em] " +
+    "transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out " +
+    "active:translate-y-px disabled:pointer-events-none disabled:opacity-45";
 
 const variants: Record<Variant, string> = {
   primary: cn(
@@ -30,6 +30,12 @@ const variants: Record<Variant, string> = {
     "rounded-sm border border-ember-500/70 bg-ember-500/12 text-ember-300",
     "hover:border-ember-400 hover:bg-ember-500/22 hover:text-ember-300",
     "shadow-[0_10px_30px_-16px_rgba(206,17,38,0.8)]",
+  ),
+  tape: cn(
+    "rounded-sm border border-tape/80 bg-tape text-floor-1000",
+    "shadow-[0_10px_28px_-16px_rgba(0,200,5,0.7)]",
+    "hover:bg-[#12d812] hover:border-[#12d812] hover:shadow-[0_14px_34px_-14px_rgba(0,200,5,0.85)]",
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tape",
   ),
 };
 
