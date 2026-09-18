@@ -1,10 +1,8 @@
 import { Atmosphere } from "@/components/atmosphere/Atmosphere";
 import { DryRunBanner } from "@/components/DryRunBanner";
-import { LaunchBar } from "@/components/LaunchBar";
 import { MotionRoot } from "@/components/MotionRoot";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { TrustStrip } from "@/components/TrustStrip";
 import { AfterHours } from "@/components/sections/AfterHours";
 import { BellPot } from "@/components/sections/BellPot";
 import { Countdown } from "@/components/sections/Countdown";
@@ -29,8 +27,6 @@ export default function Page() {
         </a>
         <DryRunBanner />
         <SiteHeader />
-        <TrustStrip />
-        <LaunchBar />
         <main className="relative z-10">
           <Hero />
           <HowTheBellWorksStrip />

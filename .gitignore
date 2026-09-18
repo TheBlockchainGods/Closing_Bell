@@ -37,6 +37,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# raw yt-dlp download; ship the compressed web MP4 only
+/public/hero/source.mp4
+
 # vercel
 .vercel
 

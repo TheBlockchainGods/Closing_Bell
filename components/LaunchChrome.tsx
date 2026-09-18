@@ -52,8 +52,8 @@ export function LaunchChrome({
   return (
     <div
       className={cn(
-        density === "bar"
-          ? "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+          density === "bar"
+          ? "flex flex-wrap items-center justify-between gap-2"
           : "flex flex-col gap-3",
         className,
       )}

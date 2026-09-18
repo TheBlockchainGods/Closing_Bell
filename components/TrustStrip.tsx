@@ -6,9 +6,8 @@ import { formatGme, formatUsd } from "@/lib/format";
 import { useBellClock } from "@/lib/use-clock";
 
 /**
- * Above-the-fold trust strip under the nav.
- * Lives next to the full Bell Pot and Countdown sections further down; it does
- * not replace them. Decorative for AT because the same figures are elsewhere.
+ * Slim jackpot / next / paid tape on the first fold.
+ * Decorative for AT because the same figures live in Bell Pot and Countdown.
  */
 export function TrustStrip() {
   const bell = useBell();
@@ -31,11 +30,8 @@ export function TrustStrip() {
         : `${formatGme(bell.totalPaidOutGme)} GME`;
 
   return (
-    <div
-      aria-hidden="true"
-      className="relative z-20 border-b border-line bg-floor-1000"
-    >
-      <div className="mx-auto grid w-full max-w-[1200px] grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+    <div aria-hidden="true" className="relative z-20">
+      <div className="mx-auto grid w-full max-w-[1200px] grid-cols-3 divide-x divide-line/70">
         <StripCell
           label="Jackpot"
           primary={jackpotPrimary}
@@ -45,12 +41,12 @@ export function TrustStrip() {
           live={bell.feedStatus === "live"}
         />
         <StripCell
-          label="Next bell"
+          label="Next"
           primary={countdown}
           secondary={nextLabel}
         />
         <StripCell
-          label="Total paid out"
+          label="Paid"
           primary={paidPrimary}
           secondary={
             bell.feedStatus === "live" ? formatUsd(paidUsd) : "From the API"
@@ -73,8 +69,8 @@ function StripCell({
   live?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 items-baseline gap-3 px-5 py-2.5 sm:px-6 sm:py-3">
-      <span className="flex shrink-0 items-center gap-1.5 font-mono text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-brass-500">
+    <div className="flex min-w-0 flex-col gap-0.5 px-2.5 py-1.5 sm:flex-row sm:items-baseline sm:gap-3 sm:px-6 sm:py-2">
+      <span className="flex shrink-0 items-center gap-1.5 font-mono text-[0.52rem] font-semibold uppercase tracking-[0.16em] text-brass-400 sm:text-[0.58rem] sm:tracking-[0.18em]">
         {live ? (
           <span
             className="size-1.5 rounded-full bg-tape shadow-[0_0_8px_rgba(0,200,5,0.7)]"
@@ -84,13 +80,13 @@ function StripCell({
         {label}
       </span>
       <span
-        className={`min-w-0 truncate font-mono text-[0.72rem] font-semibold tabular-nums tracking-[0.04em] ${
+        className={`min-w-0 truncate font-mono text-[0.62rem] font-semibold tabular-nums tracking-[0.04em] sm:text-[0.72rem] ${
           live ? "text-brass-200" : "text-ink"
         }`}
       >
         {primary}
       </span>
-      <span className="ml-auto hidden shrink-0 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-ink-3 sm:inline">
+      <span className="hidden min-w-0 truncate font-mono text-[0.62rem] uppercase tracking-[0.12em] text-ink-3 lg:ml-auto lg:inline">
         {secondary}
       </span>
     </div>

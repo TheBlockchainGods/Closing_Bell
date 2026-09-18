@@ -9,11 +9,15 @@ import {
   HeroMuteControl,
   useHeroClip,
 } from "@/components/brand/HeroBackdrop";
+import { LaunchBar } from "@/components/LaunchBar";
+import { TrustStrip } from "@/components/TrustStrip";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { useBell } from "@/lib/bell-store";
+import { DRY_RUN_PAYOUTS } from "@/lib/launch";
 import { PONS_URL } from "@/lib/mock-data";
 import { EASE_BELL } from "@/lib/motion";
 import { useNow } from "@/lib/use-clock";
+import { cn } from "@/lib/cn";
 
 export function Hero() {
   const bell = useBell();
@@ -35,16 +39,27 @@ export function Hero() {
 
   const onRing = () => {
     if (ringLocked) return;
-    // User gesture: unmute / start hero audio, then play the gavel MP4.
     clip.enableSound();
     bell.ring();
   };
 
   return (
-    <section id="top" className="relative scroll-mt-16 overflow-hidden">
+    <section
+      id="top"
+      className={cn(
+        "relative flex flex-col overflow-hidden",
+        DRY_RUN_PAYOUTS
+          ? "min-h-[calc(100dvh-6.75rem)]"
+          : "min-h-[calc(100dvh-4rem)]",
+      )}
+    >
       <HeroBackdrop clip={clip} />
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] px-5 pb-8 pt-10 sm:px-8 sm:pb-10 sm:pt-14 lg:pt-16">
-        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:gap-8">
+      <div className="relative z-10 border-b border-line/80 bg-floor-1000/40 backdrop-blur-md">
+        <TrustStrip />
+        <LaunchBar />
+      </div>
+      <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-1 flex-col justify-center px-5 py-6 sm:px-8 sm:py-10 lg:py-12">
+        <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-12 lg:gap-8">
           <div className="min-w-0 lg:col-span-6 lg:pt-2">
             <motion.p className="eyebrow" {...enter(0)}>
               $BELL &nbsp;&#183;&nbsp; GME pair &nbsp;&#183;&nbsp; Robinhood
@@ -52,7 +67,7 @@ export function Hero() {
             </motion.p>
 
             <motion.h1
-              className="mt-5 font-display type-expanded text-[clamp(2.8rem,9.5vw,5.2rem)] font-extrabold uppercase leading-[0.86] tracking-[-0.03em]"
+              className="mt-3 font-display type-expanded text-[clamp(2.4rem,9vw,5.2rem)] font-extrabold uppercase leading-[0.86] tracking-[-0.03em] sm:mt-5"
               {...enter(0.06)}
             >
               <span className="block text-ink">Closing</span>
@@ -60,14 +75,14 @@ export function Hero() {
             </motion.h1>
 
             <motion.p
-              className="mt-6 max-w-[28rem] text-[1.15rem] font-medium leading-[1.45] text-ink sm:text-[1.22rem]"
+              className="mt-4 max-w-[28rem] text-[1.05rem] font-medium leading-[1.4] text-ink sm:mt-6 sm:text-[1.22rem] sm:leading-[1.45]"
               {...enter(0.12)}
             >
               Markets used to live and die by one closing bell a day.
             </motion.p>
 
             <motion.p
-              className="mt-3 max-w-[30rem] text-[0.98rem] leading-[1.55] text-ink-2 sm:text-[1.02rem]"
+              className="mt-3 hidden max-w-[30rem] text-[0.98rem] leading-[1.55] text-ink-2 sm:block sm:text-[1.02rem]"
               {...enter(0.16)}
             >
               On Robinhood Chain, the bell can ring three times (Open, Lunch,
@@ -77,7 +92,7 @@ export function Hero() {
             </motion.p>
 
             <motion.div
-              className="mt-8 flex flex-wrap items-center gap-3"
+              className="mt-5 flex flex-wrap items-center gap-3 sm:mt-8"
               {...enter(0.2)}
             >
               <ButtonLink href="#odds" variant="primary" size="lg">
@@ -98,8 +113,7 @@ export function Hero() {
               className="mt-4 font-mono text-[0.63rem] uppercase tracking-[0.14em] text-ink-3"
               {...enter(0.24)}
             >
-              However you buy, you earn tickets. Buys of $5+ mint tickets (1,000
-              per $1 USD).
+              Buys of $5+ mint tickets (1,000 per $1 USD).
             </motion.p>
           </div>
 
@@ -109,7 +123,7 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: EASE_BELL, delay: 0.08 }}
           >
-            <div className="relative mx-auto w-full max-w-[13.5rem] sm:max-w-[16.5rem] lg:ml-auto lg:mr-0 lg:max-w-[18.5rem]">
+            <div className="relative mx-auto w-full max-w-[10.5rem] sm:max-w-[16.5rem] lg:ml-auto lg:mr-0 lg:max-w-[18.5rem]">
               <BellStage
                 phase={bell.ringPhase}
                 ringStartedAt={bell.ringStartedAt}
@@ -118,8 +132,8 @@ export function Hero() {
               />
             </div>
 
-            <div className="mx-auto mt-4 flex w-full max-w-[13.5rem] flex-col items-center gap-3 sm:max-w-[16.5rem] lg:ml-auto lg:mr-0 lg:max-w-[18.5rem]">
-              <p className="max-w-[22rem] text-center text-[0.88rem] leading-relaxed text-ink-2">
+            <div className="mx-auto mt-3 flex w-full max-w-[13.5rem] flex-col items-center gap-2.5 sm:mt-4 sm:max-w-[16.5rem] sm:gap-3 lg:ml-auto lg:mr-0 lg:max-w-[18.5rem]">
+              <p className="max-w-[22rem] text-center text-[0.82rem] leading-relaxed text-ink-2 sm:text-[0.88rem]">
                 Bellwether works the gavel. He hasn&apos;t missed a close yet.
               </p>
 
@@ -151,7 +165,7 @@ export function Hero() {
           </motion.div>
         </div>
 
-        <div className="mt-10 flex items-center gap-4 sm:mt-12">
+        <div className="mt-6 flex items-center gap-4 sm:mt-10 lg:mt-12">
           <span className="h-px flex-1 bg-line" aria-hidden="true" />
           <a
             href="#how-the-bell-works"

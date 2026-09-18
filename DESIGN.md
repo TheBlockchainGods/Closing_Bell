@@ -126,9 +126,9 @@ Under reduced motion the ring still gives feedback. BellStage animates a short b
 
 The emotional center of the page. Stage motion is about 800ms, then a short settle and a 4s cooldown before another demo ring.
 
-`BellStage` shows the static podium still by default. Ring the Bell plays `public/brand/bellwether-ring.mp4` through native `ended` (full multi-strike clip), then returns to the still and calls `finishRing()` for cooldown. No short hide timeout. Same click unmutes the hero YouTube BG. `mix-blend-screen` cleans residual black plates when the MP4 lacks real alpha. Reduced motion: skip the MP4, still unmute.
+`BellStage` shows the static podium still by default. Ring the Bell plays `public/brand/bellwether-ring.mp4` through native `ended` (full multi-strike clip), then returns to the still and calls `finishRing()` for cooldown. No short hide timeout. Same click unmutes the self-hosted hero video. `mix-blend-screen` cleans residual black plates when the MP4 lacks real alpha. Reduced motion: skip the MP4, still unmute.
 
-Hero background is a muted YouTube embed (`qxHmvXrc4Zk`) behind a dark scrim, hero-only, `pointer-events: none` on the iframe. Ring (user gesture) briefly unmutes; a small Sound off/on control sits under the ring label. `prefers-reduced-motion` keeps the CSS grain/gold/green fallback and never mounts the iframe. Embed only; the file is not in the repo.
+Hero background is a self-hosted looping MP4 (`/hero/closing-bell-hero.mp4`, same clip as former YouTube `qxHmvXrc4Zk`) with `object-fit: cover` behind a dark scrim. Native `<video autoplay muted loop playsInline>`. Ring (user gesture) unmutes; a small Sound off/on control sits under the ring label. `prefers-reduced-motion` uses the poster still and never plays the video. Jackpot / next / paid / CA sit as a slim overlay at the top of the first fold so the video can fill the remaining viewport.
 
 Replacing art: drop `art/bellwether-podium-source.jpg`, run `node scripts/prepare-podium.mjs`. Nav still uses the small brass bell glyph, not the full podium.
 
@@ -140,7 +140,7 @@ Bellwether holds the gavel high on a ~5.6s breath loop. Slow enough to register 
 
 ### Trust strip
 
-A thin three-cell strip under the nav (Jackpot, Next bell, Total paid out). It is a summary, not a substitute for the full Bell Pot and Countdown sections.
+A thin three-cell strip at the top of the first fold (Jackpot, Next, Paid), over the hero video. It is a summary, not a substitute for the full Bell Pot and Countdown sections.
 
 ### Value changes
 
