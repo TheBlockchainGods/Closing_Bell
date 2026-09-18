@@ -66,8 +66,8 @@ export default function DocsFaqPage() {
 
       <DocsH2 id="buy">Do I have to buy on this website?</DocsH2>
       <DocsP>
-        No. However you buy, you earn tickets. On-chain buys of $BELL on the GME
-        pair during an open window mint tickets.{" "}
+        No. However you buy, you earn tickets. Buys of $5+ mint tickets (1,000
+        per $1 USD) on the GME pair during an open window.{" "}
         <Link href="/docs/tickets" className="text-brass-200 hover:text-tape">
           How tickets work
         </Link>
@@ -86,9 +86,10 @@ export default function DocsFaqPage() {
 
       <DocsH2 id="fees-pot">How do fees reach the pot in v1?</DocsH2>
       <DocsP>
-        Trading fees accrue as claimable creator fees. The team claims them. A
-        jackpot share is swept into the public pot wallet. The UI shows wallet
-        balance plus accruing unclaimed share.{" "}
+        About a 4% PONS creator tax. Half of claimed fees go to the jackpot,
+        half to treasury. The UI shows the jackpot wallet balance plus 50% of
+        still-unclaimed creator fees (
+        <DocsCode>JACKPOT_SHARE_BPS=5000</DocsCode>).{" "}
         <Link href="/docs/fees" className="text-brass-200 hover:text-tape">
           Fees and the Bell Pot (v1)
         </Link>

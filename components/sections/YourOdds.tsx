@@ -229,15 +229,15 @@ function AdvancedSwap() {
 
         <dl className="mt-6 grid grid-cols-1 gap-x-8 gap-y-3 border-t border-line pt-5 sm:grid-cols-2">
           <div className="flex items-baseline justify-between gap-4">
-            <dt className="label-mono">Tickets per GME spent</dt>
-            <dd className="font-display text-[0.98rem] font-bold tabular-nums text-brass-200">
-              1,000
+            <dt className="label-mono">Tickets</dt>
+            <dd className="max-w-[14rem] text-right font-display text-[0.92rem] font-bold leading-snug text-brass-200">
+              Buys of $5+ mint tickets (1,000 per $1 USD)
             </dd>
           </div>
           <div className="flex items-baseline justify-between gap-4">
             <dt className="label-mono">Bell Pot funding</dt>
-            <dd className="font-display text-[0.98rem] font-bold text-brass-200">
-              Fees fund the pot
+            <dd className="max-w-[14rem] text-right font-display text-[0.92rem] font-bold leading-snug text-brass-200">
+              ~4% creator tax; half to jackpot
             </dd>
           </div>
         </dl>
@@ -288,9 +288,10 @@ export function YourOdds() {
       index="04"
       eyebrow="Your odds"
       title="Read any wallet's position"
-      lead="Tickets come from on-chain $BELL buys on the GME pair, wherever you trade. Your odds move until the bag locks. The public formula picks one wallet at random from that locked list. Paste an address to read tickets and odds for this window. Nothing is signed and no wallet is required."
+      lead="Buys of $5+ mint tickets (1,000 per $1 USD) from on-chain $BELL buys on the GME pair, wherever you trade. Your odds move until the bag locks. The public formula picks one wallet at random from that locked list. Paste an address to read tickets and odds for this window. Nothing is signed and no wallet is required."
     >
       <div className="mb-6 max-w-3xl space-y-2 text-[0.92rem] leading-relaxed text-ink-2">
+        <p>Buys of $5+ mint tickets (1,000 per $1 USD).</p>
         <p>Your odds move until the bag locks.</p>
         <p>Buying earlier does not freeze your % until the bell.</p>
         <p>

@@ -77,7 +77,7 @@ npm test -- ticket-tape ticket-engine
 
 `backend/fixtures/ticket-tape.json` is replayed through the ticket engine + a mock ingest pool. The suite asserts Alice’s two buys then half-sell, Bob’s 10% cap (weight only), Carol’s below-min buy (0 tickets, balance kept), Dave on the ladder, window wipe, duplicate-tx no double-mint, and an optional dry-run ring receipt that `verifyRing` reports **MATCH**.
 
-Production Lightsail stays `FIXTURE_MODE=true` / `DRY_RUN_PAYOUTS=true` until the go-live checklist in [GO_LIVE.md](./GO_LIVE.md). PONS is pump.fun-style: CA live means trading live. Prefer CREATE2 pre-stage of token + curve, then one-motion launch; fallback is set addresses + `START_BLOCK` and backfill. Indexer uses RPC logs, not DexScreener.
+Production Lightsail is `FIXTURE_MODE=false` / `DRY_RUN_PAYOUTS=true` until the go-live checklist in [GO_LIVE.md](./GO_LIVE.md). PONS is pump.fun-style: CA live means trading live. Prefer CREATE2 pre-stage of token + curve, then one-motion launch; fallback is set addresses + `START_BLOCK` and backfill. Indexer uses RPC logs, not DexScreener.
 
 Bag-lock seed: fixture mode uses `syntheticBlockhash(windowId, snapshotAt)`. Live mode (`FIXTURE_MODE=false`) reads the latest chain block hash over RPC. RPC failure logs and falls back to synthetic. `/verify` MATCHES the published hash either way.
 
@@ -104,11 +104,18 @@ The accounting proof tape (`ticket-tape.json`) is inspectable by running the tes
 
 ## Pot display math
 
+Live `/pot` (production):
+
 ```
-inPot             = jackpotWalletBalance
-accruingUnclaimed = ponsClaimable * JACKPOT_SHARE_BPS / 10000
-displayPot        = inPot + accruingUnclaimed
+jackpotWalletBalance = GME.balanceOf(JACKPOT_WALLET)
+ponsClaimable        = FeeEscrow.balanceOfToken(creator, GME)
+                       + unswept curve quoteFee/creatorTax
+                       (or hook pendingFees/pendingCreatorTax after PoolCreated)
+accruingUnclaimed    = ponsClaimable * JACKPOT_SHARE_BPS / 10000
+displayPot           = jackpotWalletBalance + accruingUnclaimed
 ```
+
+`JACKPOT_WALLET_BALANCE_GME` and `PONS_CLAIMABLE_GME` are optional local overrides only (tests). Production leaves them unset and reads chain `balanceOf` plus PONS claimable. Display may show 0.01–0.99 GME; rings still skip below `MIN_POT_GME` (default 1). Live share is `JACKPOT_SHARE_BPS=5000` (50%).
 
 ## Bell schedule (America/New_York)
 
@@ -157,10 +164,10 @@ Commands (polled): `/pot` `/odds <address>` `/ladder` `/next` — all reuse runt
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `ODDS_CAP_BPS` | `1000` | 10% cap |
-| `JACKPOT_SHARE_BPS` | `2000` | Display pot share of claimable |
+| `JACKPOT_SHARE_BPS` | `5000` | 50% of unclaimed creator GME toward display pot |
 | `MIN_BUY_USD` | `5` | Ticket floor |
 | `TICKETS_PER_USD` | `1000` | Mint rate |
-| `MIN_POT_GME` | `1` | Skip ring below this display pot |
+| `MIN_POT_GME` | `1` | Skip ring below this display pot (display may still show 0.01+) |
 | `BELLS_24_7` | `true` | Daily vs weekday bells |
 | `SNAPSHOT_LEAD_SECONDS` | `120` | Bag lock lead |
 | `SETTLE_GRACE_SECONDS` | `900` | How late a missed bell may still ring (restart catch-up) |
@@ -203,9 +210,16 @@ Dry-run a full lock → winner → wipe against fixtures (logs TG text if no bot
 npm run demo:dry-ring
 ```
 
-## Flip `DRY_RUN_PAYOUTS=false` safely
+## Flip `DRY_RUN_PAYOUTS=false` (founder approval only)
 
-Follow the PONS one-motion checklist in [GO_LIVE.md](./GO_LIVE.md). Production host is Lightsail. Do not flip `DRY_RUN_PAYOUTS=false` until a real buy mints tickets.
+Do not flip this now. When the founder approves live GME sends:
+
+1. Confirm `/health` `fixtureMode: false`, tickets exist for a real `$BELL` CA, and jackpot wallet GME >= announced `displayPot`.
+2. Lightsail env: `DRY_RUN_PAYOUTS=false` only. Keep `JACKPOT_SHARE_BPS=5000`. Restart the container.
+3. Boot must succeed: `JACKPOT_PRIVATE_KEY` derives to `JACKPOT_WALLET`; `GME_TOKEN_ADDRESS` and `RPC_URL` set.
+4. Each ring: `closing-bell-draw-v1` picks one wallet from the locked ticket list. Keeper ERC-20 `transfer`s `displayPot` to **that winner only**, once per `windowId`, persists `tx_hash`. Skip if pot < `MIN_POT_GME`. Dry-run remaining true means announce only.
+
+Until that flip: keeper announces, records the winner, sends **no** GME.
 
 ## Deploy (Railway)
 

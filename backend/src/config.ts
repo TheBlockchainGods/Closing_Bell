@@ -86,6 +86,17 @@ function envOptionalInt(name: string): number | null {
   return value;
 }
 
+/** Present only when the env var is set. Empty/unset is null (live chain read). */
+function envOptionalNumber(name: string): number | null {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) {
+    throw new Error(`Invalid number for ${name}: ${raw}`);
+  }
+  return value;
+}
+
 /**
  * Single source of runtime knobs. Change via `.env` + restart.
  * Do not scatter magic numbers elsewhere.
@@ -130,7 +141,7 @@ export const config = {
   priceFeedUrl: envString("PRICE_FEED_URL"),
 
   oddsCapBps: envInt("ODDS_CAP_BPS", 1000),
-  jackpotShareBps: envInt("JACKPOT_SHARE_BPS", 2000),
+  jackpotShareBps: envInt("JACKPOT_SHARE_BPS", 5000),
   minBuyUsd: envNumber("MIN_BUY_USD", 5),
   ticketsPerUsd: envNumber("TICKETS_PER_USD", 1000),
   minPotGme: envNumber("MIN_POT_GME", 1),
@@ -140,8 +151,21 @@ export const config = {
   // catch-up after a restart so an outage cannot retro-fire a stale ring.
   settleGraceSeconds: envInt("SETTLE_GRACE_SECONDS", 900),
 
-  ponsClaimableGme: envNumber("PONS_CLAIMABLE_GME", 0),
-  jackpotWalletBalanceGme: envNumber("JACKPOT_WALLET_BALANCE_GME", 0),
+  /** Local tests only. Unset in prod so /pot reads GME.balanceOf. */
+  jackpotWalletBalanceGmeOverride: envOptionalNumber(
+    "JACKPOT_WALLET_BALANCE_GME",
+  ),
+  /** Local tests only. Unset in prod so /pot reads PONS unclaimed GME. */
+  ponsClaimableGmeOverride: envOptionalNumber("PONS_CLAIMABLE_GME"),
+  ponsFeeEscrowAddress: envAddress("PONS_FEE_ESCROW"),
+  ponsCreatorFeeRecipient: envAddress("PONS_CREATOR_FEE_RECIPIENT"),
+
+  get jackpotWalletBalanceGme(): number {
+    return this.jackpotWalletBalanceGmeOverride ?? 0;
+  },
+  get ponsClaimableGme(): number {
+    return this.ponsClaimableGmeOverride ?? 0;
+  },
 
   startBlock: envInt("START_BLOCK", 0),
   indexerPollMs: envInt("INDEXER_POLL_MS", 2000),

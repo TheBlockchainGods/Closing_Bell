@@ -16,7 +16,7 @@ import {
 export const metadata: Metadata = {
   title: "Fees and the Bell Pot (v1)",
   description:
-    "How trading fees accrue into the Bell Pot display in v1, and what the public jackpot wallet is.",
+    "How ~4% PONS creator fees split 50/50 into jackpot and treasury, and what the Bell Pot display shows.",
 };
 
 export default function DocsFeesPage() {
@@ -25,11 +25,11 @@ export default function DocsFeesPage() {
       <p className="eyebrow">Fees</p>
       <DocsH1>Fees and the Bell Pot (v1)</DocsH1>
       <DocsLead>
-        In v1, trading fees on the pair accrue as claimable creator fees. The
-        team claims those fees. A configured jackpot share is treated as pot
-        funding. The public jackpot wallet holds GME that the UI shows as the
-        Bell Pot (plus unclaimed accruing share). Who gets paid: the public
-        formula picks one wallet at random from the locked ticket list (see{" "}
+        PONS charges about a 4% creator tax on the pair. Half of claimed fees go
+        to the jackpot, half to treasury. The site shows the public jackpot
+        wallet GME balance plus 50% of still-unclaimed creator fees. Who gets
+        paid: the public formula picks one wallet at random from the locked
+        ticket list (see{" "}
         <Link href="/docs/draw" className="text-brass-200 hover:text-tape">
           Bag lock and the draw
         </Link>
@@ -37,20 +37,22 @@ export default function DocsFeesPage() {
       </DocsLead>
 
       <DocsH2 id="display">What the UI shows</DocsH2>
-      <DocsPre>{`inPot             = jackpotWalletBalance
+      <DocsPre>{`inPot             = GME.balanceOf(JACKPOT_WALLET)
 accruingUnclaimed = ponsClaimable * JACKPOT_SHARE_BPS / 10000
 displayPot        = inPot + accruingUnclaimed`}</DocsPre>
       <DocsUl>
         <li>
-          Default <DocsCode>JACKPOT_SHARE_BPS=2000</DocsCode> means 20% of the
-          claimable fee balance is counted toward the accruing pot display.
+          Live <DocsCode>JACKPOT_SHARE_BPS=5000</DocsCode> means 50% of unclaimed
+          creator fees count toward the accruing pot.
         </li>
         <li>
-          <DocsCode>inPot</DocsCode> is GME already in the public jackpot wallet.
+          <DocsCode>inPot</DocsCode> is on-chain GME already in the public jackpot
+          wallet.
         </li>
         <li>
-          Exact trading-tax rates are set at launch on the pair contracts. The
-          backend does not hardcode a &quot;3% pot fee&quot; string for display.
+          After a claim, half of those fees are swept toward the jackpot wallet
+          and half toward treasury. Until claim, the UI still counts 50% of the
+          unclaimed balance as accruing.
         </li>
       </DocsUl>
 
@@ -58,9 +60,9 @@ displayPot        = inPot + accruingUnclaimed`}</DocsPre>
       <DocsUl>
         <li>Claim accrued trading fees (team / ops).</li>
         <li>
-          Sweep the jackpot share into the public{" "}
-          <DocsCode>JACKPOT_WALLET</DocsCode> before rings when needed so{" "}
-          <DocsCode>inPot</DocsCode> matches what should pay out.
+          Sweep the jackpot half into the public{" "}
+          <DocsCode>JACKPOT_WALLET</DocsCode> so <DocsCode>inPot</DocsCode> matches
+          what should pay out.
         </li>
         <li>
           Fee wallet addresses used for ops are never exposed in the public API
@@ -70,12 +72,16 @@ displayPot        = inPot + accruingUnclaimed`}</DocsPre>
 
       <DocsCallout title="Honest scope">
         <p>
-        The pot starts at 0 GME. It builds as trading fees are claimed and the
-        jackpot share is swept into the public wallet. Until that sweep,{" "}
-        <DocsCode>JACKPOT_WALLET_BALANCE_GME</DocsCode> and{" "}
-        <DocsCode>PONS_CLAIMABLE_GME</DocsCode> should stay 0 rather than a
-        stubbed demo balance. Gas to send GME later is ETH on Robinhood Chain
-        (a small amount in the jackpot wallet, on the order of 0.004 ETH).
+          Live <DocsCode>/pot</DocsCode> reads the jackpot wallet GME{" "}
+          <DocsCode>balanceOf</DocsCode> and the 50% share of unclaimed PONS
+          creator fees.{" "}
+          <DocsCode>JACKPOT_WALLET_BALANCE_GME</DocsCode> and{" "}
+          <DocsCode>PONS_CLAIMABLE_GME</DocsCode> are optional local overrides
+          only (tests / dry local). Production leaves them unset and reads
+          chain + PONS. Amounts from 0.01 GME show on the site and Telegram.
+          Rings still skip below <DocsCode>MIN_POT_GME</DocsCode> (default 1 GME).
+          Gas to send GME later is ETH on Robinhood Chain (about 0.004 ETH in
+          the jackpot wallet).
         </p>
       </DocsCallout>
 

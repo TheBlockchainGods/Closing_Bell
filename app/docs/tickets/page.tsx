@@ -25,10 +25,11 @@ export default function DocsTicketsPage() {
       <p className="eyebrow">Tickets</p>
       <DocsH1>How tickets work</DocsH1>
       <DocsLead>
-        However you buy, you earn tickets. An on-chain buy of $BELL on the GME
-        pair during an open window mints Bell tickets. You do not need to trade
-        through this website. A person does not pick the winner. The public
-        formula picks one wallet at random from the locked ticket list (see{" "}
+        However you buy, you earn tickets. Buys of $5+ mint tickets (1,000 per
+        $1 USD). An on-chain buy of $BELL on the GME pair during an open window
+        is enough. You do not need to trade through this website. A person does
+        not pick the winner. The public formula picks one wallet at random from
+        the locked ticket list (see{" "}
         <Link href="/docs/draw" className="text-brass-200 hover:text-tape">
           Bag lock and the draw
         </Link>
@@ -39,7 +40,7 @@ export default function DocsTicketsPage() {
       <DocsP>
         The indexer watches buys against the GME pair. Ticket weight is based on
         USD spent (GME amount times the USD price used by the backend), not on
-        how long you have held the bag.
+        how long you have held the bag. Buys under $5 mint zero tickets.
       </DocsP>
       <DocsPre>{`usdSpent = GME_amount * GME_USD_price
 tickets  = usdSpent < MIN_BUY_USD ? 0 : floor(usdSpent * TICKETS_PER_USD)`}</DocsPre>
@@ -49,7 +50,8 @@ tickets  = usdSpent < MIN_BUY_USD ? 0 : floor(usdSpent * TICKETS_PER_USD)`}</Doc
           under that mint zero tickets.
         </li>
         <li>
-          Default <DocsCode>TICKETS_PER_USD</DocsCode> is <strong>1000</strong>.
+          Default <DocsCode>TICKETS_PER_USD</DocsCode> is <strong>1000</strong>{" "}
+          (1,000 tickets per $1 USD spent).
         </li>
         <li>
           Buys from routers, aggregators, bots, and this site all count the same
@@ -82,13 +84,13 @@ tickets  = usdSpent < MIN_BUY_USD ? 0 : floor(usdSpent * TICKETS_PER_USD)`}</Doc
         ). After lock, new buys do not change that ring&apos;s frozen bag.
       </DocsP>
 
-      <DocsCallout title="Site vs backend wording">
+      <DocsCallout title="Public wording">
         <p>
-          Some marketing UI mocks still show a simplified &quot;tickets per
-          GME&quot; figure. The live ticket engine uses USD spent after price
-          conversion, with the defaults above. Treat{" "}
-          <DocsCode>MIN_BUY_USD</DocsCode> and{" "}
-          <DocsCode>TICKETS_PER_USD</DocsCode> as the source of truth.
+          Marketing line: buys of $5+ mint tickets (1,000 per $1 USD). Do not
+          advertise &quot;1,000 tickets per GME.&quot; The formulas above are
+          the source of truth (
+          <DocsCode>MIN_BUY_USD</DocsCode>,{" "}
+          <DocsCode>TICKETS_PER_USD</DocsCode>).
         </p>
       </DocsCallout>
 

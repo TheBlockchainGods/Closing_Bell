@@ -45,8 +45,10 @@ export const WALLET: WalletSnapshot = {
   tickets: 26_480,
 };
 
-/** 1,000 Bell tickets per GME spent. */
-export const TICKETS_PER_GME = 1000;
+/** 1,000 Bell tickets per $1 USD spent (after GME→USD). Min buy $5. */
+export const TICKETS_PER_USD = 1000;
+/** @deprecated Use TICKETS_PER_USD. Kept so old imports do not break. */
+export const TICKETS_PER_GME = TICKETS_PER_USD;
 
 /**
  * The ticket ladder for the current window, quoted at the reference window size
@@ -201,14 +203,14 @@ export const HOW_STEPS: HowStep[] = [
     index: 1,
     title: "Buy",
     kicker: "Anywhere you already trade",
-    body: "Buy $BELL anywhere on the GME pair and you still earn tickets. Tickets are weighted by the GME you spend in the window, not by the bag you already hold.",
+    body: "Buy $BELL on the GME pair and you earn tickets. Buys of $5+ mint tickets (1,000 per $1 USD). Weight follows USD spent in the window, not the bag you already hold.",
     rule: "You never have to trade through this site. It reads your position, it does not gate it.",
   },
   {
     index: 2,
     title: "Accrue",
     kicker: "The pot builds while the session runs",
-    body: "A slice of every trade routes to the Bell Pot in GME. It sits in the open, climbing, until the next bell. Nothing is paid out mid-window.",
+    body: "About a 4% PONS creator tax. Half of claimed fees go to the jackpot, half to treasury. The Bell Pot shows the wallet balance plus 50% of still-unclaimed fees until the next bell.",
     rule: "Selling burns your tickets pro-rata. Conviction is the entry fee.",
   },
   {
@@ -224,7 +226,7 @@ export const LOCKED_RULES: LockedRule[] = [
   {
     id: "tickets",
     title: "Tickets are earned, not bought here",
-    body: "However you buy, you earn tickets. Bots, terminals, aggregators and this page all count the same.",
+    body: "However you buy, you earn tickets. Buys of $5+ mint tickets (1,000 per $1 USD). Bots, terminals, aggregators and this page all count the same.",
   },
   {
     id: "cap",

@@ -18,7 +18,7 @@ const SECTIONS = [
 ];
 
 const RULES = [
-  "However you buy, you earn tickets. Odds move until the bag locks. Odds cap (10%) is max draw weight vs the live bag.",
+  "Buys of $5+ mint tickets (1,000 per $1 USD). Odds move until the bag locks. Odds cap (10%) is max draw weight vs the live bag.",
   "Selling burns Bell tickets pro-rata, immediately.",
   "At the bell, the public formula picks one wallet. That wallet is paid the full pot in GME and every Bell ticket wipes.",
   "Bells ring every day at 09:30 / 12:30 / 16:00 ET. Robinhood Chain never sleeps.",

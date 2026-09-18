@@ -98,7 +98,8 @@ export function Hero() {
               className="mt-4 font-mono text-[0.63rem] uppercase tracking-[0.14em] text-ink-3"
               {...enter(0.24)}
             >
-              However you buy, you earn tickets.
+              However you buy, you earn tickets. Buys of $5+ mint tickets (1,000
+              per $1 USD).
             </motion.p>
           </div>
 
