@@ -6,6 +6,7 @@ import { BellRuntime } from "./runtime/bell-runtime.js";
 import { buildServer } from "./api/server.js";
 import { TelegramBot } from "./telegram/bot.js";
 import { DrawKeeper } from "./keeper/draw-keeper.js";
+import { assertJackpotPayoutConfig } from "./keeper/payout.js";
 
 async function main() {
   console.log(
@@ -13,6 +14,9 @@ async function main() {
   );
 
   if (!config.fixtureMode) {
+    console.log(
+      "FIXTURE_MODE=false: PONS launch adapter will index CurveBuy/CurveSell then UV4 Swap after PoolCreated. Backfill from START_BLOCK (cursor seeds START_BLOCK-1). If tickets stay at 0 after a real buy, check START_BLOCK and curve address, then set FIXTURE_MODE=true to rollback.",
+    );
     if (!config.tokenAddress) {
       console.warn(
         "FIXTURE_MODE=false but TOKEN_ADDRESS is empty. Indexer adapters will idle until launch addresses are set.",
@@ -28,6 +32,8 @@ async function main() {
       "DRY_RUN_PAYOUTS=false — keeper will send GME from JACKPOT_WALLET on rings.",
     );
   }
+
+  assertJackpotPayoutConfig();
 
   await waitForDb();
   await migrate();

@@ -27,9 +27,13 @@ export default function DocsDrawPage() {
       <DocsH1>Bag lock and the draw</DocsH1>
       <DocsLead>
         Two minutes before each scheduled bell, the ticket bag freezes. The
-        draw keeper then runs formula{" "}
-        <DocsCode>closing-bell-draw-v1</DocsCode> and publishes a receipt. Humans
-        do not pick wallets.
+        public formula <DocsCode>closing-bell-draw-v1</DocsCode> picks one wallet
+        at random from that locked list. A person does not pick. Anyone can
+        re-check on{" "}
+        <Link href="/verify" className="text-brass-200 hover:text-tape">
+          /verify
+        </Link>
+        .
       </DocsLead>
 
       <DocsH2 id="lock">Bag lock</DocsH2>
@@ -53,7 +57,8 @@ export default function DocsDrawPage() {
         </li>
         <li>
           Build a seed from public inputs: block hash at snapshot, window id,
-          and pot balance.
+          and pot balance. Fixture mode uses a published synthetic hash. Live
+          mode reads the latest chain block hash at bag lock.
         </li>
         <li>
           Walk the capped weights with that seed until one wallet is selected.
@@ -71,17 +76,18 @@ export default function DocsDrawPage() {
 
       <DocsCallout title="No manual winner">
         <p>
-          The keeper runs this formula. Operators may claim fees, sweep the pot
-          wallet, and send the payout transaction to the formula winner. They
-          never choose or override the winning wallet.
+          The public formula picks the wallet. Operators may claim fees, sweep
+          the pot wallet, and send the payout transaction to the formula winner.
+          They never choose or override the winning wallet.
         </p>
       </DocsCallout>
 
       <DocsH2 id="technical">Technical steps (closing-bell-draw-v1)</DocsH2>
       <DocsP>
-        Shared implementation lives in{" "}
-        <DocsCode>packages/fairness</DocsCode> and is imported by the backend
-        keeper. High level:
+        The draw service is a Node.js + TypeScript keeper hosted on Amazon
+        Lightsail. Shared implementation lives in{" "}
+        <DocsCode>packages/fairness</DocsCode> and is imported by that keeper.
+        High level:
       </DocsP>
       <DocsPre>{`1. Cap each wallet:
      weight = min(tickets, floor(ticketsOut * ODDS_CAP_BPS / 10000))
@@ -105,9 +111,8 @@ export default function DocsDrawPage() {
           page. MATCH means the receipt recomputes identically.
         </li>
         <li>
-          This is a published deterministic formula over public inputs. It is
-          not a VRF product claim and not a &quot;trustless&quot; marketing
-          slogan.
+          This is a published deterministic formula over public inputs. We do
+          not claim on-chain VRF. We claim a public formula you can recompute.
         </li>
       </DocsUl>
 

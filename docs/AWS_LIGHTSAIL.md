@@ -4,7 +4,7 @@ Region default: **us-west-2** (Oregon). Change only if your startup-credit email
 
 Estimated cost (credit-eligible): Lightsail Container Service **Nano** (~$7/mo) + managed Postgres **$15/mo** (or a small Lightsail DB), well under $1100 credits.
 
-Keep `DRY_RUN_PAYOUTS=true` and `FIXTURE_MODE=true` until you explicitly go live.
+Keep `DRY_RUN_PAYOUTS=true` and `FIXTURE_MODE=true` until you explicitly go live. Ticket math is proven with fixtures; do not point this service at a random PONS CA. Launch flow (CREATE2 pre-stage + one-motion PONS launch): [GO_LIVE.md](./GO_LIVE.md).
 
 ## A) Create a deploy IAM user (not root, not Bedrock)
 
@@ -140,8 +140,8 @@ Create `lightsail-deployment.json` locally (do not commit real passwords). Templ
       "SNAPSHOT_LEAD_SECONDS": "120",
       "GME_USD_PRICE": "23.18",
       "JACKPOT_WALLET": "0x1111111111111111111111111111111111111111",
-      "JACKPOT_WALLET_BALANCE_GME": "1284.62",
-      "PONS_CLAIMABLE_GME": "96.41",
+      "JACKPOT_WALLET_BALANCE_GME": "0",
+      "PONS_CLAIMABLE_GME": "0",
       "START_BLOCK": "0",
       "INDEXER_POLL_MS": "2000",
       "KEEPER_POLL_MS": "1000"
@@ -200,7 +200,7 @@ Optional Telegram later (Lightsail env only):
 | Local compose `/health` | Run section B |
 | Lightsail service | After `aws sts get-caller-identity` works |
 | Telegram announces to chat | Blocked until bot token + chat id |
-| Real chain indexing / GME payouts | Blocked until `FIXTURE_MODE=false` and you flip dry-run |
+| Real chain indexing / GME payouts | Follow [GO_LIVE.md](./GO_LIVE.md). One-motion PONS launch; RPC logs indexer. |
 
 ## E) Stop conditions
 

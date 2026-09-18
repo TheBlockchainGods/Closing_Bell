@@ -29,8 +29,9 @@ export default function DocsVerifyPage() {
         <Link href="/verify" className="text-brass-200 hover:text-tape">
           /verify
         </Link>
-        . Paste or load the published receipt. The page runs the same{" "}
-        <DocsCode>closing-bell-draw-v1</DocsCode> math as the keeper.
+        . Paste or load the published receipt. The page runs the same public
+        formula <DocsCode>closing-bell-draw-v1</DocsCode>. Same list + same
+        formula → same wallet.
       </DocsLead>
 
       <DocsH2 id="match">What MATCH means</DocsH2>
@@ -75,14 +76,26 @@ export default function DocsVerifyPage() {
         </li>
       </DocsUl>
 
-      <DocsCallout title="Same math as the keeper" tone="note">
+      <DocsCallout title="Same public formula" tone="note">
         <p>
-          The draw keeper and /verify both use{" "}
-          <DocsCode>closing-bell-draw-v1</DocsCode>. Winner selection is never
-          manual. Verification is how anyone can check that the published
+          The draw path and /verify both use{" "}
+          <DocsCode>closing-bell-draw-v1</DocsCode>. A person does not pick the
+          winner. Verification is how anyone can check that the published
           receipt matches the formula.
         </p>
       </DocsCallout>
+
+      <DocsH2 id="technical">Technical</DocsH2>
+      <DocsP>
+        App: Node.js + TypeScript keeper (draw service) on AWS Lightsail. Math:{" "}
+        <DocsCode>packages/fairness</DocsCode>, formula id{" "}
+        <DocsCode>closing-bell-draw-v1</DocsCode>. Seed: keccak256 over public
+        inputs (snapshot blockhash material, window id, pot balance). Pick:
+        weighted walk over the locked ticket snapshot, with a 10% odds cap on
+        draw weight only. Proof: this page imports the same function the keeper
+        uses. MATCH means the receipt matches the formula. We do not claim
+        on-chain VRF. We claim a public formula you can recompute.
+      </DocsP>
 
       <DocsPager
         prev={{ href: "/docs/draw", label: "Bag lock and the draw" }}

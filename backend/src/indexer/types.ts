@@ -29,3 +29,21 @@ export interface VenueAdapter {
     tipBlock: bigint;
   }>;
 }
+
+/** Sort by block/logIndex and drop duplicate eventIds (graduation overlap). */
+export function mergeTradeEvents(
+  ...groups: ChainTradeEvent[][]
+): ChainTradeEvent[] {
+  const seen = new Set<string>();
+  const out: ChainTradeEvent[] = [];
+  const all = groups.flat().sort((a, b) => {
+    if (a.blockNumber === b.blockNumber) return a.logIndex - b.logIndex;
+    return a.blockNumber < b.blockNumber ? -1 : 1;
+  });
+  for (const row of all) {
+    if (seen.has(row.eventId)) continue;
+    seen.add(row.eventId);
+    out.push(row);
+  }
+  return out;
+}

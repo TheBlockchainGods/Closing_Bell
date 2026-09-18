@@ -18,7 +18,7 @@ Public observables: jackpot wallet, pot balances, draw receipts (`GET /winners/:
 
 **`DRY_RUN_PAYOUTS=true` (default):** compute winner, persist receipt, wipe, announce — **do not** send GME. Verification covers the draw result only.
 
-**`DRY_RUN_PAYOUTS=false`:** ERC-20 transfer of GME from `JACKPOT_WALLET` (requires `JACKPOT_PRIVATE_KEY` + `GME_TOKEN_ADDRESS` + `RPC_URL`). One settle per `windowId`; failed sends leave the draw locked for retry (no double-pay after a successful mark).
+**`DRY_RUN_PAYOUTS=false`:** ERC-20 transfer of the **announced** jackpot GME from `JACKPOT_WALLET` (requires `JACKPOT_PRIVATE_KEY` + `GME_TOKEN_ADDRESS` + `RPC_URL`). One settle per `windowId`. A successful `tx_hash` is never sent twice. Failed sends still persist the winner, pin an honest WIN CELEBRATION (`payout send failed, pay manually`), and log plus Telegram-alert. They do not fake a paid hash.
 
 **Never** expose marketing / ops / dev fee wallet addresses in API responses or client-bound logs.
 
@@ -34,12 +34,13 @@ backend/
     draw/               Winner selection + durable draws/winners store
     runtime/            Live ticket book; lock/wipe hooks
     indexer/            Venue adapters + idempotent ingest
-    telegram/           Announce bot + /pot /odds /ladder /next
+    telegram/           Announce bot + /pot /jackpot /how /verify /fairness /random
     keeper/             Snapshot + ring worker (+ optional GME send)
     api/server.ts
     db/
   scripts/demo-dry-ring.ts
-  fixtures/swaps.json
+  fixtures/swaps.json          Production fixture bag (FIXTURE_MODE)
+  fixtures/ticket-tape.json    Hand-checked buy/sell story for tests
   docker-compose.yml
   railway.json
 docs/BACKEND.md
@@ -52,9 +53,54 @@ usdSpent = GME_amount * GME_USD_price
 tickets  = usdSpent < MIN_BUY_USD ? 0 : floor(usdSpent * TICKETS_PER_USD)
 ```
 
-Sell burn: `floor(tickets * bellSold / bellBalanceBefore)`. Ring wipe: all tickets → 0.
+Exact below-min behavior (`usdSpent < MIN_BUY_USD`, default `$5`):
 
-Odds / draw weight cap: each wallet’s draw weight is `min(tickets, floor(ticketsOut * ODDS_CAP_BPS / 10000))`. Excess is not counted.
+- Tickets minted for that buy: **0**. Equal to the floor still mints (`$5.00` → `5000` tickets).
+- `$BELL` balance still increases by `bellReceived`. Later sells need that inventory so pro-rata burn is correct.
+- `spentGme` / `spentUsd` do **not** increase. Only qualifying buys count as spent this window.
+- The wallet is omitted from `/ladder` while it has 0 tickets.
+
+Sell burn: `floor(tickets * bellSold / bellBalanceBefore)`. Ring wipe: tickets and spent fields → 0; `$BELL` balances stay.
+
+Odds / draw weight cap: each wallet’s **draw weight** is `min(tickets, floor(ticketsOut * ODDS_CAP_BPS / 10000))`. Excess is not counted. **Ticket inventory is unchanged** (a capped whale still shows full tickets on `/odds` and `/ladder`).
+
+Duplicate trades: ingest key is `event_id = txHash:logIndex`. `INSERT … ON CONFLICT (event_id) DO NOTHING` so a replayed tx does not double-mint.
+
+## Ticket tape (how ticket math was proven)
+
+Checked-in story at `gmeUsdPrice = 10` (hand-checkable dollars). This file is **not** loaded by production `FixtureAdapter` (`fixtures/swaps.json` stays the live fixture bag).
+
+```bash
+cd backend
+npm test -- ticket-tape ticket-engine
+```
+
+`backend/fixtures/ticket-tape.json` is replayed through the ticket engine + a mock ingest pool. The suite asserts Alice’s two buys then half-sell, Bob’s 10% cap (weight only), Carol’s below-min buy (0 tickets, balance kept), Dave on the ladder, window wipe, duplicate-tx no double-mint, and an optional dry-run ring receipt that `verifyRing` reports **MATCH**.
+
+Production Lightsail stays `FIXTURE_MODE=true` / `DRY_RUN_PAYOUTS=true` until the go-live checklist in [GO_LIVE.md](./GO_LIVE.md). PONS is pump.fun-style: CA live means trading live. Prefer CREATE2 pre-stage of token + curve, then one-motion launch; fallback is set addresses + `START_BLOCK` and backfill. Indexer uses RPC logs, not DexScreener.
+
+Bag-lock seed: fixture mode uses `syntheticBlockhash(windowId, snapshotAt)`. Live mode (`FIXTURE_MODE=false`) reads the latest chain block hash over RPC. RPC failure logs and falls back to synthetic. `/verify` MATCHES the published hash either way.
+
+## Inspect a wallet / fixture trades (no /admin)
+
+While the API is up (local or Lightsail fixture):
+
+| What | Where |
+| --- | --- |
+| Tickets, odds, cap, `$BELL` balance, spent this window | `GET /odds?address=0x…` |
+| Standings (tickets > 0 only) | `GET /ladder?limit=20` |
+| Window tickets-out + phase | `GET /window/current` |
+| Checked-in fixture swap tape (`swaps.json`) | `GET /fixture/trades` (404 unless `FIXTURE_MODE=true`) |
+
+Example:
+
+```bash
+curl "http://localhost:8787/odds?address=0x4b19Ce77a0E2d61f5c8B3aD9017f4E62c0aB8137"
+curl "http://localhost:8787/ladder?limit=20"
+curl "http://localhost:8787/fixture/trades"
+```
+
+The accounting proof tape (`ticket-tape.json`) is inspectable by running the tests above, not via `/fixture/trades`.
 
 ## Pot display math
 
@@ -81,6 +127,11 @@ Open 09:30 · Lunch 12:30 · Close 16:00.
 
 Guards: unique `window_id` on `draws`; settle update only from `phase=locked`.
 
+The ring is driven off `previousBell(now)`, which includes a bell landing
+exactly on `now`. `nextBell` only ever returns bells strictly after `now`, so it
+can lock a bag but can never fire the ring. A bell older than
+`SETTLE_GRACE_SECONDS` is left at `phase=locked` rather than rung late.
+
 ## Telegram bot
 
 Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. Without a token, announces print as `[tg:dry]` (local fixture path).
@@ -96,8 +147,9 @@ Commands (polled): `/pot` `/odds <address>` `/ladder` `/next` — all reuse runt
 | `GET /health` | Liveness + public config |
 | `GET /pot` | Display pot breakdown |
 | `GET /window/current` | phase, next bell, countdown, tickets |
-| `GET /odds?address=0x…` | Position this window |
+| `GET /odds?address=0x…` | Tickets, odds, cap, `$BELL` balance, spent this window |
 | `GET /ladder?limit=20` | Current-window ladder |
+| `GET /fixture/trades` | Fixture swap tape (only while `FIXTURE_MODE=true`) |
 | `GET /winners?limit=20` | Settled rings (incl. dry_run) |
 
 ## Environment variables
@@ -111,19 +163,27 @@ Commands (polled): `/pot` `/odds <address>` `/ladder` `/next` — all reuse runt
 | `MIN_POT_GME` | `1` | Skip ring below this display pot |
 | `BELLS_24_7` | `true` | Daily vs weekday bells |
 | `SNAPSHOT_LEAD_SECONDS` | `120` | Bag lock lead |
+| `SETTLE_GRACE_SECONDS` | `900` | How late a missed bell may still ring (restart catch-up) |
 | `CHAIN_ID` | `4663` | Robinhood Chain |
-| `RPC_URL` | empty | Indexing + live payouts |
+| `RPC_URL` | empty | Indexing + live payouts (alias `CHAIN_RPC_URL`) |
 | `TOKEN_ADDRESS` | empty | Launch paste |
 | `CURVE_OR_POOL` | empty | Launch paste |
-| `JACKPOT_WALLET` | fixture | Public jackpot |
+| `JACKPOT_WALLET` | fixture | Public jackpot (alias `JACKPOT_WALLET_ADDRESS`) |
 | `GME_TOKEN_ADDRESS` | empty | Required if paying live |
-| `JACKPOT_PRIVATE_KEY` | empty | Required if paying live; never log |
+| `JACKPOT_PRIVATE_KEY` | empty | Required if paying live; never log (alias `JACKPOT_WALLET_PRIVATE_KEY`) |
+| `EXPLORER_TX_URL_PREFIX` | empty | Optional Blockscout tx prefix |
+| `PAYOUT_GAS_LIMIT` | empty | Optional ERC-20 transfer gas |
+| `GME_TOKEN_DECIMALS` | empty | Fallback if `decimals()` is unavailable |
 | `GME_USD_PRICE` | `23.18` | Stub price |
 | `DATABASE_URL` | local compose | Postgres |
+| `START_BLOCK` | `0` | Deploy block or earlier. Backfill replays from here even if the indexer starts late |
 | `FIXTURE_MODE` | `true` | Mock swaps |
 | `DRY_RUN_PAYOUTS` | `true` | No GME send |
 | `TELEGRAM_BOT_TOKEN` | empty | Optional |
 | `TELEGRAM_CHAT_ID` | empty | Optional |
+| `PUBLIC_SITE_URL` | `https://closingbellonrh.com` | Telegram + verify links |
+| `PUBLIC_API_URL` | Lightsail origin | Receipt links |
+| `X_URL` | `https://x.com/ClosingBellOnRH` | Share / footer |
 | `KEEPER_POLL_MS` | `1000` | Keeper loop |
 | `INDEXER_POLL_MS` | `2000` | Indexer loop |
 | `PORT` | `8787` | HTTP |
@@ -145,16 +205,11 @@ npm run demo:dry-ring
 
 ## Flip `DRY_RUN_PAYOUTS=false` safely
 
-1. Confirm `FIXTURE_MODE=false` and live `TOKEN_ADDRESS` / RPC are correct.
-2. Fund **public** `JACKPOT_WALLET` with GME.
-3. Set `GME_TOKEN_ADDRESS`, `JACKPOT_PRIVATE_KEY` (must match jackpot wallet).
-4. Keep Telegram configured so rings are announced with tx hashes.
-5. Restart. Watch one ring end-to-end on a small pot first.
-6. Never commit the private key; never put fee/marketing wallets in env that the API echoes.
+Follow the PONS one-motion checklist in [GO_LIVE.md](./GO_LIVE.md). Production host is Lightsail. Do not flip `DRY_RUN_PAYOUTS=false` until a real buy mints tickets.
 
 ## Deploy (Railway)
 
-Preferred boring path: one always-on Railway service + Railway Postgres.
+Historical notes. Production is Lightsail ([AWS_LIGHTSAIL.md](./AWS_LIGHTSAIL.md)). Preferred boring path if you still use Railway: one always-on Railway service + Railway Postgres.
 
 **Blocked on this workstation (2026-09-14):** Railway CLI is logged in as `TBG_JUST_G`, but `railway init` failed with:
 

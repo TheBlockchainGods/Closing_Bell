@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import {
   DocsCallout,
+  DocsCode,
   DocsH1,
   DocsH2,
   DocsLead,
@@ -27,24 +28,38 @@ export default function DocsIntroPage() {
       <DocsLead>
         Closing Bell ($BELL) is a market ritual on the GME pair. Buy $BELL during
         an open window, earn Bell tickets, watch the Bell Pot climb, and when the
-        bell rings one wallet takes the pot in GME. Tickets wipe. The next window
-        starts fresh.
+        bell rings the public formula picks one wallet for the pot in GME.
+        Tickets wipe. The next window starts fresh.
       </DocsLead>
 
       <DocsCallout title="Who picks the winner">
         <p>
-          A person does not pick the winning wallet. The Closing Bell automated
-          draw service on AWS runs a fixed public math formula{" "}
+          A person does not pick the winner. The public Closing Bell formula{" "}
           <code className="font-mono text-brass-200">closing-bell-draw-v1</code>{" "}
-          on the full ticket list from when entries stopped for that jackpot.
-          Same list + same formula, same wallet. Anyone can re-run it on{" "}
+          picks one wallet at random from the locked ticket list. Same list +
+          same formula → same wallet. Check any ring on{" "}
           <Link href="/verify" className="text-brass-200 hover:text-tape">
-            Verify
+            /verify
           </Link>
           . Operators claim fees, sweep the pot wallet, and (when live) send the
           payout to that formula winner. They do not choose who wins.
         </p>
       </DocsCallout>
+
+      <DocsH2 id="technical">Technical</DocsH2>
+      <DocsP>
+        The draw service is a Node.js + TypeScript keeper on AWS Lightsail. Shared
+        math lives in <DocsCode>packages/fairness</DocsCode>, formula id{" "}
+        <DocsCode>closing-bell-draw-v1</DocsCode>. Seed is keccak256 over public
+        inputs (snapshot blockhash material, window id, pot balance). The pick is
+        a weighted walk over the locked ticket snapshot. The 10% odds cap applies
+        to draw weight only. Site{" "}
+        <Link href="/verify" className="text-brass-200 hover:text-tape">
+          /verify
+        </Link>{" "}
+        runs the same function. MATCH means the receipt matches the formula. We
+        do not claim on-chain VRF. We claim a public formula you can recompute.
+      </DocsP>
 
       <DocsH2 id="start-here">Start here</DocsH2>
       <DocsOl>
@@ -90,7 +105,11 @@ export default function DocsIntroPage() {
         <Link href="/verify" className="text-brass-200 hover:text-tape">
           /verify
         </Link>
-        , docs, Telegram + Bellwether bot, Bell Alerts, and router tape. Those
+        , docs,{" "}
+        <Link href="/docs/telegram" className="text-brass-200 hover:text-tape">
+          Telegram + Bellwether bot
+        </Link>
+        , Bell Alerts, and router tape. Those
         are not roadmap items.
       </DocsP>
       <DocsP>

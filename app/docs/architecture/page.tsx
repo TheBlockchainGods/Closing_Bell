@@ -118,15 +118,25 @@ export default function DocsArchitecturePage() {
 
       <DocsH2 id="telegram">Telegram bot</DocsH2>
       <DocsP>
-        Same backend process can announce rings and answer commands when{" "}
+        Bellwether is the community bot. The same backend process announces rings
+        and answers slash commands when{" "}
         <DocsCode>TELEGRAM_BOT_TOKEN</DocsCode> and{" "}
-        <DocsCode>TELEGRAM_CHAT_ID</DocsCode> are set. Without a token, announces
-        log as <DocsCode>[tg:dry]</DocsCode>.
+        <DocsCode>TELEGRAM_CHAT_ID</DocsCode> are set. Usage for traders:{" "}
+        <Link href="/docs/telegram" className="text-brass-200 hover:text-tape">
+          Bellwether Telegram bot
+        </Link>
+        .
       </DocsP>
       <DocsUl>
         <li>
-          Commands: <DocsCode>/pot</DocsCode>, <DocsCode>/odds</DocsCode>,{" "}
-          <DocsCode>/ladder</DocsCode>, <DocsCode>/next</DocsCode>.
+          <DocsCode>/fairness</DocsCode>, <DocsCode>/random</DocsCode>,{" "}
+          <DocsCode>/draw</DocsCode>: identical fairness reply (summary +
+          technical).
+        </li>
+        <li>
+          <DocsCode>/pot</DocsCode>, <DocsCode>/jackpot</DocsCode>,{" "}
+          <DocsCode>/how</DocsCode>, <DocsCode>/verify</DocsCode>,{" "}
+          <DocsCode>/next</DocsCode>, <DocsCode>/odds</DocsCode>.
         </li>
         <li>
           All commands reuse runtime / API math (no second odds formula).
@@ -158,18 +168,17 @@ export default function DocsArchitecturePage() {
           ],
           [
             "Cloud (Lightsail)",
-            "Same container image on Lightsail with managed Postgres. Public /health API.",
+            "Same container image on Lightsail with managed Postgres. Public /health API. Fixture tape until launch motion.",
             <>
-              Same knobs until go-live. Set live{" "}
-              <DocsCode>RPC_URL</DocsCode> / token addresses when indexing for
-              real.
+              <DocsCode>FIXTURE_MODE=true</DocsCode>,{" "}
+              <DocsCode>DRY_RUN_PAYOUTS=true</DocsCode> until launch motion.
             </>,
           ],
           [
-            "Go-live payouts",
-            "Keeper still picks via formula. GME transfer enabled only when dry-run is off and jackpot keying is configured.",
+            "Go-live (one-motion)",
+            "Pre-stage CREATE2 token and curve, then launch and first-block buys together. Backfill from START_BLOCK if the process starts late. Amplify CA/chart can lag. Flip dry-run off only after tickets mint.",
             <>
-              <DocsCode>FIXTURE_MODE=false</DocsCode>,{" "}
+              First <DocsCode>FIXTURE_MODE=false</DocsCode>, then later{" "}
               <DocsCode>DRY_RUN_PAYOUTS=false</DocsCode>
             </>,
           ],

@@ -14,6 +14,7 @@ export const DOCS_NAV: DocsNavItem[] = [
   { href: "/docs/payouts", label: "Payouts" },
   { href: "/docs/architecture", label: "System architecture and tech" },
   { href: "/docs/operations", label: "Automated vs operator-run" },
+  { href: "/docs/telegram", label: "Bellwether Telegram bot" },
   { href: "/docs/faq", label: "FAQ" },
 ];
 

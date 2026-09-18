@@ -3,6 +3,7 @@
 import { CommunityLinks } from "@/components/brand/CommunityLinks";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { LaunchChrome } from "@/components/LaunchChrome";
+import { WHO_PICKS_ONE_LINER } from "@/lib/fairness-copy";
 
 const SECTIONS = [
   { href: "#bell-pot", label: "Bell Pot" },
@@ -19,7 +20,7 @@ const SECTIONS = [
 const RULES = [
   "However you buy, you earn tickets. Odds move until the bag locks. Odds cap (10%) is max draw weight vs the live bag.",
   "Selling burns Bell tickets pro-rata, immediately.",
-  "At the bell, the winner is paid the full pot in GME and every Bell ticket wipes.",
+  "At the bell, the public formula picks one wallet. That wallet is paid the full pot in GME and every Bell ticket wipes.",
   "Bells ring every day at 09:30 / 12:30 / 16:00 ET. Robinhood Chain never sleeps.",
   "After Hours is next: weekly GME pot for $BELL stakers.",
 ];
@@ -32,8 +33,7 @@ export function SiteFooter() {
           <div>
             <Wordmark />
             <p className="mt-5 max-w-sm text-[0.92rem] leading-relaxed text-ink-2">
-              A market ritual on the GME pair. The pot builds all day, and the
-              bell decides who takes it.
+              A market ritual on the GME pair. {WHO_PICKS_ONE_LINER}
             </p>
             <CommunityLinks className="mt-6" />
             <div className="mt-8 border-t border-line pt-6">

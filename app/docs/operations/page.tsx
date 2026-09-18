@@ -24,9 +24,10 @@ export default function DocsOperationsPage() {
       <p className="eyebrow">Operations</p>
       <DocsH1>Automated vs operator-run</DocsH1>
       <DocsLead>
-        Winner selection is never manual. Operators handle fee claim, pot sweep,
-        and (when live) making sure the payout transaction reaches the formula
-        winner.
+        A person does not pick the winner. The public formula picks one wallet
+        at random from the locked ticket list. Operators handle fee claim, pot
+        sweep, and (when live) making sure the payout transaction reaches that
+        formula winner.
       </DocsLead>
 
       <DocsH2 id="table">Who does what</DocsH2>
@@ -41,7 +42,7 @@ export default function DocsOperationsPage() {
           [
             "Bag lock + draw (closing-bell-draw-v1)",
             "Automated",
-            "Keeper runs the formula. Humans do not pick wallets.",
+            "Public formula picks the wallet. Humans do not.",
           ],
           [
             "Publish receipt + wipe tickets",
@@ -105,7 +106,10 @@ export default function DocsOperationsPage() {
           href: "/docs/architecture",
           label: "System architecture and tech",
         }}
-        next={{ href: "/docs/faq", label: "FAQ" }}
+        next={{
+          href: "/docs/telegram",
+          label: "Bellwether Telegram bot",
+        }}
       />
     </article>
   );

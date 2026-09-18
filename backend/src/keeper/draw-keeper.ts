@@ -4,9 +4,11 @@ import { buildRingReceipt } from "@closing-bell/fairness";
 import { config } from "../config.js";
 import {
   nextBell,
+  previousBell,
   snapshotAtForBell,
   type BellOccurrence,
 } from "../clock/market-clock.js";
+import { resolveSnapshotBlockhash } from "../chain/blockhash.js";
 import {
   buildDrawEntrants,
   drawSeedHex,
@@ -20,11 +22,16 @@ import type { BellRuntime } from "../runtime/bell-runtime.js";
 import type { TelegramBot } from "../telegram/bot.js";
 import {
   formatBagLocked,
-  formatRingResult,
+  formatPayoutFailedAlert,
   formatSkip,
   formatWiped,
 } from "../telegram/format.js";
-import { sendJackpotPayout } from "./payout.js";
+import {
+  resolveJackpotPayout,
+  sendJackpotPayout,
+  type SendJackpotPayout,
+} from "./payout.js";
+import { skipRingReason } from "./skip.js";
 import { totalTickets } from "../tickets/engine.js";
 
 /**
@@ -40,6 +47,7 @@ export class DrawKeeper {
     private readonly pool: Pool,
     private readonly runtime: BellRuntime,
     private readonly bot: TelegramBot,
+    private readonly sendPayout: SendJackpotPayout = sendJackpotPayout,
   ) {
     this.store = new DrawStore(pool);
   }
@@ -67,31 +75,57 @@ export class DrawKeeper {
     await this.settle(upcoming, now);
   }
 
-  private async tick(): Promise<void> {
+  /** One keeper pass: settle any due/prior unsettled bell, then lock the upcoming bag. */
+  async tick(nowInput?: Date): Promise<void> {
     if (this.running) return;
     this.running = true;
     try {
-      const now = new Date();
-      const upcoming = nextBell(now, config.bells24_7);
-      if (!upcoming) return;
+      const now = nowInput ?? new Date();
 
-      const snapAt = snapshotAtForBell(
-        upcoming.at,
-        config.snapshotLeadSeconds,
-      );
-
-      if (now.getTime() >= snapAt.getTime()) {
-        await this.ensureLocked(upcoming, now);
+      // Option A settle-gate: finish a prior unsettled bell before locking next.
+      // - If the prior window is already locked in DB, settle it even past grace
+      //   so the bag cannot stick locked across the next snapshot.
+      // - If it was never locked, only settle within the grace window (no stale
+      //   retro-ring of an unlocked bag).
+      const previous = previousBell(now, config.bells24_7);
+      if (previous) {
+        const priorRow = await this.store.get(this.windowIdFor(previous));
+        if (priorRow?.phase === "locked") {
+          await this.settle(previous, now);
+        } else if (this.dueBell(now)) {
+          await this.settle(previous, now);
+        }
       }
 
-      if (now.getTime() >= upcoming.at.getTime()) {
-        await this.settle(upcoming, now);
+      const upcoming = nextBell(now, config.bells24_7);
+      if (upcoming) {
+        const snapAt = snapshotAtForBell(
+          upcoming.at,
+          config.snapshotLeadSeconds,
+        );
+        if (now.getTime() >= snapAt.getTime()) {
+          await this.ensureLocked(upcoming, now);
+        }
       }
     } catch (err) {
       console.error("Draw keeper tick error:", err);
     } finally {
       this.running = false;
     }
+  }
+
+  /**
+   * Bell that is due to ring. `nextBell` only returns bells strictly after
+   * `now`, so the ring must be driven off `previousBell`, which includes a
+   * bell landing exactly on `now`. Bells older than the grace window are left
+   * alone so a restart cannot retro-ring a stale bag.
+   */
+  private dueBell(now: Date): BellOccurrence | null {
+    const previous = previousBell(now, config.bells24_7);
+    if (!previous) return null;
+    const lateBy = now.getTime() - previous.at.getTime();
+    if (lateBy < 0 || lateBy > config.settleGraceSeconds * 1000) return null;
+    return previous;
   }
 
   private windowIdFor(bell: BellOccurrence): string {
@@ -116,10 +150,12 @@ export class DrawKeeper {
     }
 
     const snapAt = snapshotAtForBell(bell.at, config.snapshotLeadSeconds);
-    const blockhash = config.fixtureMode
-      ? syntheticBlockhash(windowId, snapAt)
-      : syntheticBlockhash(windowId, snapAt);
-    // Live path can later replace with eth_getBlockByNumber hash at snapshot.
+    const blockhash = await resolveSnapshotBlockhash({
+      fixtureMode: config.fixtureMode,
+      rpcUrl: config.rpcUrl,
+      windowId,
+      at: snapAt,
+    });
 
     const { inserted } = await this.store.tryLock({
       windowId,
@@ -176,8 +212,13 @@ export class DrawKeeper {
       config.oddsCapBps,
     );
     const totalWeight = totalDrawWeight(entrants);
+    const skip = skipRingReason({
+      potGme,
+      minPotGme: config.minPotGme,
+      totalWeight,
+    });
 
-    if (totalWeight === 0) {
+    if (skip === "empty bag") {
       await this.store.markSkipped(windowId, "empty bag", potGme);
       this.runtime.wipeAndSettle(bell.at);
       await this.bot.send(
@@ -191,12 +232,8 @@ export class DrawKeeper {
       return;
     }
 
-    if (potGme < config.minPotGme) {
-      await this.store.markSkipped(
-        windowId,
-        `pot below MIN_POT_GME (${config.minPotGme})`,
-        potGme,
-      );
+    if (skip) {
+      await this.store.markSkipped(windowId, skip, potGme);
       this.runtime.wipeAndSettle(bell.at);
       await this.bot.send(
         formatSkip({
@@ -229,24 +266,23 @@ export class DrawKeeper {
       return;
     }
 
-    let txHash: string | null = null;
-    let phase: "dry_run" | "paid" | "failed" = "dry_run";
+    const payout = await resolveJackpotPayout({
+      dryRun: config.dryRunPayouts,
+      existingTxHash: locked.txHash,
+      existingPhase: locked.phase,
+      winner: picked.winner.address as `0x${string}`,
+      amountGme: potGme,
+      send: this.sendPayout,
+    });
+    const txHash = payout.txHash;
+    const phase = payout.phase;
+    const payoutFailed = phase === "failed";
 
-    if (config.dryRunPayouts) {
-      phase = "dry_run";
-    } else {
-      try {
-        const paid = await sendJackpotPayout({
-          winner: picked.winner.address as `0x${string}`,
-          amountGme: pot.inPot,
-        });
-        txHash = paid.txHash;
-        phase = "paid";
-      } catch (err) {
-        console.error("Payout failed (no double-pay; leaving draw locked):", err);
-        // Do not wipe or mark paid — retry next tick while still locked.
-        return;
-      }
+    if (payoutFailed) {
+      console.error(
+        `Payout failed for ${windowId} (winner recorded, no GME sent):`,
+        payout.error ?? "unknown error",
+      );
     }
 
     const updated = await this.store.markSettled({
@@ -259,6 +295,9 @@ export class DrawKeeper {
       oddsAtRing: picked.winner.odds,
       txHash,
       dryRun: phase === "dry_run",
+      skipReason: payoutFailed
+        ? `payout send failed: ${payout.error ?? "unknown error"}`
+        : null,
       receiptJson: buildRingReceipt({
         windowId,
         announcedWinner: picked.winner.address,
@@ -296,17 +335,29 @@ export class DrawKeeper {
 
     this.runtime.wipeAndSettle(bell.at);
 
-    await this.bot.send(
-      formatRingResult({
-        bellLabel: bell.label,
-        winner: picked.winner.address,
-        odds: picked.winner.odds,
-        amountGme: potGme,
-        ticketsAtRing: picked.winner.tickets,
-        dryRun: phase === "dry_run",
-        txHash,
-      }),
-    );
+    await this.bot.announceWin({
+      bellLabel: bell.label,
+      bellAt: bell.at.toISOString(),
+      winner: picked.winner.address,
+      odds: picked.winner.odds,
+      amountGme: potGme,
+      amountUsd: pot.displayPotUsd,
+      ticketsAtRing: picked.winner.tickets,
+      dryRun: phase === "dry_run",
+      payoutFailed,
+      txHash,
+      windowId,
+    });
+    if (payoutFailed) {
+      await this.bot.send(
+        formatPayoutFailedAlert({
+          windowId,
+          winner: picked.winner.address,
+          amountGme: potGme,
+          error: payout.error ?? "unknown error",
+        }),
+      );
+    }
     await this.bot.send(formatWiped({ windowId }));
   }
 }

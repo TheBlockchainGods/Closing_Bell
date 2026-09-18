@@ -214,7 +214,17 @@ export class BellRuntime {
     };
   }
 
-  oddsFor(address: string, now = new Date()): OddsResult & { address: string } {
+  oddsFor(
+    address: string,
+    now = new Date(),
+  ): OddsResult & {
+    address: string;
+    bellBalance: number;
+    spentGme: number;
+    spentUsd: number;
+    spentInWindowGme: number;
+    spentInWindowUsd: number;
+  } {
     this.tick(now);
     const book =
       this.phase === "locked" && this.snapshot ? this.snapshot : this.live;
@@ -224,7 +234,15 @@ export class BellRuntime {
       totalTickets(book),
       this.cfg.oddsCapBps,
     );
-    return { address: address.toLowerCase(), ...result };
+    return {
+      address: address.toLowerCase(),
+      ...result,
+      bellBalance: wallet.bellBalance,
+      spentGme: wallet.spentGme,
+      spentUsd: wallet.spentUsd,
+      spentInWindowGme: wallet.spentGme,
+      spentInWindowUsd: wallet.spentUsd,
+    };
   }
 
   ladder(limit = 20, now = new Date()): LadderRow[] {

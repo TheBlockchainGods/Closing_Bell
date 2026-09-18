@@ -288,7 +288,7 @@ export function YourOdds() {
       index="04"
       eyebrow="Your odds"
       title="Read any wallet's position"
-      lead="Tickets come from on-chain $BELL buys on the GME pair, wherever you trade. Your odds move until the bag locks. Paste an address to read tickets and odds for this window. Nothing is signed and no wallet is required."
+      lead="Tickets come from on-chain $BELL buys on the GME pair, wherever you trade. Your odds move until the bag locks. The public formula picks one wallet at random from that locked list. Paste an address to read tickets and odds for this window. Nothing is signed and no wallet is required."
     >
       <div className="mb-6 max-w-3xl space-y-2 text-[0.92rem] leading-relaxed text-ink-2">
         <p>Your odds move until the bag locks.</p>
@@ -298,11 +298,13 @@ export function YourOdds() {
           does not lock a {formatPct(bell.oddsCap)} win chance for the rest of the window.
         </p>
         <p>
-          What counts is the ticket bag at bag lock (snapshot), which you can{" "}
+          A person does not pick the winner. The public Closing Bell formula
+          picks one wallet at random from the locked ticket list. Check any ring
+          on{" "}
           <a href="/verify" className="text-brass-200 underline-offset-2 hover:underline">
-            verify
-          </a>{" "}
-          after the ring.
+            /verify
+          </a>
+          .
         </p>
       </div>
 

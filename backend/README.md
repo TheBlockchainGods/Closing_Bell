@@ -18,8 +18,11 @@ docker compose up --build
 ```bash
 npm install
 npm test
-npm run demo:dry-ring   # needs Postgres up
+npm test -- ticket-tape   # buy/sell → tickets story (no live CA)
+npm run demo:dry-ring     # needs Postgres up
 ```
+
+Ticket accounting is proven with fixtures only. Production stays `FIXTURE_MODE=true` and `DRY_RUN_PAYOUTS=true` until [docs/GO_LIVE.md](../docs/GO_LIVE.md). Do not index a random live token.
 
 ## Workers
 
@@ -38,7 +41,8 @@ One process runs:
 | Launch indexing | `FIXTURE_MODE=false` + `TOKEN_ADDRESS` + `RPC_URL` + `CURVE_OR_POOL` |
 | Live GME payouts | `DRY_RUN_PAYOUTS=false` + `GME_TOKEN_ADDRESS` + `JACKPOT_PRIVATE_KEY` |
 
-See [docs/BACKEND.md](../docs/BACKEND.md) for formulas, trust model, and safe payout flip.
+See [docs/BACKEND.md](../docs/BACKEND.md) for formulas, inspect URLs, and the ticket tape.
+See [docs/GO_LIVE.md](../docs/GO_LIVE.md) for PONS one-motion launch (CREATE2 pre-stage, backfill fallback, live payouts).
 See [docs/AWS_LIGHTSAIL.md](../docs/AWS_LIGHTSAIL.md) for IAM + Lightsail deploy (us-west-2, ~$1100 credits).
 
 ## Deploy on Railway

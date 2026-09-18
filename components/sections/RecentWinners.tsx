@@ -76,7 +76,7 @@ export function RecentWinners() {
       index="08"
       eyebrow="Recent winners"
       title="Every ring, on the record"
-      lead="One wallet per bell, paid in GME, published as it settles. Tickets reset for everyone the moment a ring clears."
+      lead="One wallet per bell, paid in GME, published as it settles. A person does not pick the winner. The public formula picks from the locked ticket list. Check any ring on /verify. Tickets reset for everyone the moment a ring clears."
       aside={
         <div className="rounded-xs border border-line bg-floor-900 px-4 py-3">
           <p className="label-mono">Paid across last six rings</p>

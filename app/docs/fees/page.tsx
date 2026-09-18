@@ -28,7 +28,12 @@ export default function DocsFeesPage() {
         In v1, trading fees on the pair accrue as claimable creator fees. The
         team claims those fees. A configured jackpot share is treated as pot
         funding. The public jackpot wallet holds GME that the UI shows as the
-        Bell Pot (plus unclaimed accruing share).
+        Bell Pot (plus unclaimed accruing share). Who gets paid: the public
+        formula picks one wallet at random from the locked ticket list (see{" "}
+        <Link href="/docs/draw" className="text-brass-200 hover:text-tape">
+          Bag lock and the draw
+        </Link>
+        ).
       </DocsLead>
 
       <DocsH2 id="display">What the UI shows</DocsH2>
@@ -65,11 +70,12 @@ displayPot        = inPot + accruingUnclaimed`}</DocsPre>
 
       <DocsCallout title="Honest scope">
         <p>
-          Fee claim and sweep are operator-run in v1. The draw keeper does not
-          claim PONS fees for you. Until creator-fee adapters are fully wired,
-          some environments still stub claimable and wallet balances with env
-          knobs for display. The formulas above stay the contract for how the
-          pot number is built.
+        The pot starts at 0 GME. It builds as trading fees are claimed and the
+        jackpot share is swept into the public wallet. Until that sweep,{" "}
+        <DocsCode>JACKPOT_WALLET_BALANCE_GME</DocsCode> and{" "}
+        <DocsCode>PONS_CLAIMABLE_GME</DocsCode> should stay 0 rather than a
+        stubbed demo balance. Gas to send GME later is ETH on Robinhood Chain
+        (a small amount in the jackpot wallet, on the order of 0.004 ETH).
         </p>
       </DocsCallout>
 

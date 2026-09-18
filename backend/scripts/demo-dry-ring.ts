@@ -9,7 +9,6 @@ import { closePool, getPool, waitForDb } from "../src/db/client.js";
 import { migrate } from "../src/db/migrate.js";
 import { buildAdapters, IndexerService } from "../src/indexer/service.js";
 import { BellRuntime } from "../src/runtime/bell-runtime.js";
-import { TelegramBot } from "../src/telegram/bot.js";
 import { DrawStore } from "../src/draw/store.js";
 import {
   buildDrawEntrants,
@@ -21,9 +20,11 @@ import {
 import {
   formatBagLocked,
   formatBuyAnnounce,
-  formatRingResult,
+  formatWinCelebration,
   formatWiped,
 } from "../src/telegram/format.js";
+import { pinLatestWin, postWinCelebration } from "../src/telegram/celebration.js";
+import { publicSiteOrigin } from "../src/telegram/links.js";
 import { mintTickets, totalTickets, usdSpent } from "../src/tickets/engine.js";
 import { createTelegramSender } from "../src/telegram/client.js";
 import { nextBell, remainingUntil } from "../src/clock/market-clock.js";
@@ -148,17 +149,19 @@ async function main() {
 
   runtime.wipeAndSettle(bellAt);
 
-  await tg.send(
-    formatRingResult({
-      bellLabel,
-      winner: picked.winner.address,
-      odds: picked.winner.odds,
-      amountGme: pot.displayPot,
-      ticketsAtRing: picked.winner.tickets,
-      dryRun: true,
-      txHash: null,
-    }),
-  );
+  const caption = formatWinCelebration({
+    bellLabel,
+    winner: picked.winner.address,
+    amountGme: pot.displayPot,
+    amountUsd: pot.displayPotUsd,
+    dryRun: true,
+    txHash: null,
+    verifyUrl: `${publicSiteOrigin()}/verify`,
+  });
+  const posted = await postWinCelebration(tg, caption);
+  if (posted?.messageId) {
+    await pinLatestWin(tg, posted.messageId);
+  }
   await tg.send(formatWiped({ windowId }));
 
   console.log(

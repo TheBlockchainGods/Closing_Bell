@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     template: "%s · Closing Bell Docs",
   },
   description:
-    "Closing Bell documentation: tickets, odds, fees, bag lock, draw fairness, verification, payouts, and system architecture.",
+    "Closing Bell documentation: tickets, odds, fees, bag lock, draw fairness, verification, payouts, Bellwether bot, and system architecture.",
 };
 
 export default function DocsLayout({

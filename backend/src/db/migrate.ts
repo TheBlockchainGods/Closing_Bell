@@ -1,6 +1,4 @@
-import pg from "pg";
-
-import { config } from "../config.js";
+import { closePool, getPool } from "./client.js";
 
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS meta (
@@ -11,6 +9,7 @@ CREATE TABLE IF NOT EXISTS meta (
 CREATE TABLE IF NOT EXISTS indexer_cursor (
   adapter TEXT PRIMARY KEY,
   last_block BIGINT NOT NULL DEFAULT 0,
+  start_block BIGINT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -76,26 +75,23 @@ const PATCHES = [
   `ALTER TABLE winners ADD COLUMN IF NOT EXISTS tx_hash TEXT`,
   `ALTER TABLE winners ADD COLUMN IF NOT EXISTS dry_run BOOLEAN NOT NULL DEFAULT TRUE`,
   `ALTER TABLE draws ADD COLUMN IF NOT EXISTS receipt_json JSONB`,
+  `ALTER TABLE indexer_cursor ADD COLUMN IF NOT EXISTS start_block BIGINT`,
 ];
 
-export async function migrate(databaseUrl = config.databaseUrl): Promise<void> {
-  const client = new pg.Client({ connectionString: databaseUrl });
-  await client.connect();
-  try {
-    await client.query(SCHEMA_SQL);
-    for (const patch of PATCHES) {
-      await client.query(patch);
-    }
-  } finally {
-    await client.end();
+export async function migrate(): Promise<void> {
+  const pool = getPool();
+  await pool.query(SCHEMA_SQL);
+  for (const patch of PATCHES) {
+    await pool.query(patch);
   }
 }
 
 const isDirectRun = process.argv[1]?.includes("migrate");
 if (isDirectRun) {
   migrate()
-    .then(() => {
+    .then(async () => {
       console.log("Migrations applied.");
+      await closePool();
     })
     .catch((err) => {
       console.error(err);

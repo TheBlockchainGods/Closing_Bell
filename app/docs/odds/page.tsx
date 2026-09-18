@@ -25,9 +25,14 @@ export default function DocsOddsPage() {
       <p className="eyebrow">Odds</p>
       <DocsH1>Odds and the 10% cap</DocsH1>
       <DocsLead>
-        Your chance of winning moves until the bag locks. The 10% rule caps how
-        much draw weight one wallet can hold versus the live ticket bag. It does
-        not freeze your win percent at the moment you buy.
+        Your chance of winning moves until the bag locks. The public formula
+        then picks one wallet at random from that locked list (see{" "}
+        <Link href="/docs/draw" className="text-brass-200 hover:text-tape">
+          Bag lock and the draw
+        </Link>
+        ). The 10% rule caps how much draw weight one wallet can hold versus the
+        live ticket bag. It does not freeze your win percent at the moment you
+        buy.
       </DocsLead>
 
       <DocsH2 id="live-odds">Odds move with the bag</DocsH2>

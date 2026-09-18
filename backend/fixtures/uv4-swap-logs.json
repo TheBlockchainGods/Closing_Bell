@@ -1,0 +1,32 @@
+{
+  "quoteDecimals": 18,
+  "tokenDecimals": 18,
+  "token": "0x2222222222222222222222222222222222222222",
+  "quote": "0x1111111111111111111111111111111111111111",
+  "fee": 0,
+  "tickSpacing": 60,
+  "hooks": "0xE5e702641Ea86F4ae6cC3cDaeD2B886f976Be044",
+  "gmeUsdPrice": 20,
+  "minBuyUsd": 5,
+  "ticketsPerUsd": 1000,
+  "events": [
+    {
+      "event": "Swap",
+      "blockNumber": 200,
+      "logIndex": 0,
+      "txHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "sender": "0xddddddddddddddddddddddddddddddddddddddd1",
+      "tokenDeltaWei": "800000000000000000000",
+      "quoteDeltaWei": "-8000000000000000000"
+    },
+    {
+      "event": "Swap",
+      "blockNumber": 201,
+      "logIndex": 2,
+      "txHash": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "sender": "0xddddddddddddddddddddddddddddddddddddddd1",
+      "tokenDeltaWei": "-200000000000000000000",
+      "quoteDeltaWei": "2000000000000000000"
+    }
+  ]
+}

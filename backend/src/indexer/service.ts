@@ -2,34 +2,39 @@ import type { Pool } from "pg";
 
 import { config } from "../config.js";
 import { FixtureAdapter } from "./adapters/fixture.js";
-import { PonsCurveAdapter } from "./adapters/pons-curve.js";
-import { UniswapV4Adapter } from "./adapters/uniswap-v4.js";
+import { PonsLaunchAdapter } from "./adapters/pons-launch.js";
+import { bootCursor, cursorSeed } from "./cursor.js";
 import type { ChainTradeEvent, VenueAdapter } from "./types.js";
 import type { BellRuntime } from "../runtime/bell-runtime.js";
+import type { Hex } from "viem";
+import { PONS_V2_FACTORY, PONS_V2_HOOK, UNISWAP_V4_POOL_MANAGER } from "./abi.js";
 
 export function buildAdapters(): VenueAdapter[] {
   if (config.fixtureMode) {
     return [new FixtureAdapter()];
   }
 
-  const adapters: VenueAdapter[] = [];
-  if (config.curveOrPool && config.tokenAddress && config.rpcUrl) {
-    adapters.push(
-      new PonsCurveAdapter({
-        rpcUrl: config.rpcUrl,
-        curveAddress: config.curveOrPool,
-        tokenAddress: config.tokenAddress,
-        chainId: config.chainId,
-      }),
-      new UniswapV4Adapter({
-        rpcUrl: config.rpcUrl,
-        poolOrHook: config.curveOrPool,
-        tokenAddress: config.tokenAddress,
-        chainId: config.chainId,
-      }),
+  if (!config.tokenAddress || !config.rpcUrl) {
+    console.error(
+      "FIXTURE_MODE=false but TOKEN_ADDRESS or RPC_URL is empty. Indexer will idle. Pre-stage CREATE2 addresses before launch, or set them immediately after and backfill from START_BLOCK.",
     );
+    return [];
   }
-  return adapters;
+
+  return [
+    new PonsLaunchAdapter({
+      rpcUrl: config.rpcUrl,
+      tokenAddress: config.tokenAddress as Hex,
+      curveAddress: (config.curveOrPool || "0x0000000000000000000000000000000000000000") as Hex,
+      quoteAddress: (config.gmeTokenAddress ||
+        "0x0000000000000000000000000000000000000000") as Hex,
+      chainId: config.chainId,
+      factoryAddress: (config.ponsFactoryAddress || PONS_V2_FACTORY) as Hex,
+      hookAddress: (config.ponsHookAddress || PONS_V2_HOOK) as Hex,
+      poolManager: (config.uniswapV4PoolManager || UNISWAP_V4_POOL_MANAGER) as Hex,
+      quoteDecimals: config.gmeTokenDecimals ?? 18,
+    }),
+  ];
 }
 
 export class IndexerService {
@@ -65,14 +70,47 @@ export class IndexerService {
     this.timer = null;
   }
 
-  private async ensureCursors(): Promise<void> {
+  /**
+   * Seed or rewind last_block to cover START_BLOCK.
+   * Rewind is required when the process first came up after launch with a
+   * later tip cursor, then START_BLOCK was set to the deploy block.
+   */
+  async ensureCursors(): Promise<void> {
     for (const adapter of this.adapters) {
-      await this.pool.query(
-        `INSERT INTO indexer_cursor (adapter, last_block)
-         VALUES ($1, $2)
-         ON CONFLICT (adapter) DO NOTHING`,
-        [adapter.name, this.startBlock.toString()],
+      const { rows } = await this.pool.query<{
+        last_block: string;
+        start_block: string | null;
+      }>(
+        `SELECT last_block::text AS last_block, start_block::text AS start_block
+         FROM indexer_cursor WHERE adapter = $1`,
+        [adapter.name],
       );
+      const existingLast = rows[0] ? BigInt(rows[0].last_block) : null;
+      const existingStart =
+        rows[0]?.start_block !== undefined &&
+        rows[0]?.start_block !== null &&
+        rows[0].start_block !== ""
+          ? BigInt(rows[0].start_block)
+          : null;
+      const merged = bootCursor({
+        startBlock: this.startBlock,
+        existingLast,
+        existingStart,
+      });
+      await this.pool.query(
+        `INSERT INTO indexer_cursor (adapter, last_block, start_block)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (adapter) DO UPDATE
+           SET last_block = EXCLUDED.last_block,
+               start_block = EXCLUDED.start_block,
+               updated_at = NOW()`,
+        [adapter.name, merged.toString(), this.startBlock.toString()],
+      );
+      if (existingLast !== null && merged < existingLast) {
+        console.warn(
+          `Indexer cursor ${adapter.name} rewound ${existingLast} → ${merged} so backfill can replay from START_BLOCK=${this.startBlock}.`,
+        );
+      }
     }
   }
 
@@ -81,18 +119,18 @@ export class IndexerService {
       `SELECT last_block::text AS last_block FROM indexer_cursor WHERE adapter = $1`,
       [adapter],
     );
-    if (!rows[0]) return this.startBlock;
+    if (!rows[0]) return cursorSeed(this.startBlock);
     return BigInt(rows[0].last_block);
   }
 
   private async setCursor(adapter: string, block: bigint): Promise<void> {
     await this.pool.query(
-      `INSERT INTO indexer_cursor (adapter, last_block, updated_at)
-       VALUES ($1, $2, NOW())
+      `INSERT INTO indexer_cursor (adapter, last_block, start_block, updated_at)
+       VALUES ($1, $2, $3, NOW())
        ON CONFLICT (adapter) DO UPDATE
          SET last_block = EXCLUDED.last_block,
              updated_at = NOW()`,
-      [adapter, block.toString()],
+      [adapter, block.toString(), this.startBlock.toString()],
     );
   }
 

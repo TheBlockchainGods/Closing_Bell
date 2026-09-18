@@ -410,7 +410,9 @@ export function VerifyClient({ apiBase }: { apiBase: string | null }) {
             Bag lock freezes the ticket bag (snapshot) for the draw.
           </li>
           <li>
-            Winner equals the published formula over that bag.
+            A person does not pick the winner. The public Closing Bell formula
+            (closing-bell-draw-v1) picks one wallet at random from the locked
+            ticket list. Same list + same formula → same wallet.
           </li>
           <li>
             We post a receipt: the public ring record.
@@ -421,9 +423,9 @@ export function VerifyClient({ apiBase }: { apiBase: string | null }) {
           </li>
         </ol>
         <p className="mt-5 text-[0.9rem] leading-relaxed text-ink-3">
-          The keeper publishes the inputs. You check the math. MATCH means the
-          math matches the receipt. Payout settlement is separate from draw
-          verification.
+          The locked ticket list and formula inputs are published. You check the
+          math. MATCH means the math matches the receipt. Payout settlement is
+          separate from draw verification.
         </p>
       </section>
 

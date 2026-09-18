@@ -20,6 +20,7 @@ export function buildServer(runtime: BellRuntime) {
           "FEE_WALLET",
           "MARKETING_WALLET",
           "JACKPOT_PRIVATE_KEY",
+          "JACKPOT_WALLET_PRIVATE_KEY",
           "jackpotPrivateKey",
           "req.headers.authorization",
         ],
@@ -53,6 +54,16 @@ export function buildServer(runtime: BellRuntime) {
     };
   });
 
+  app.get("/share/jackpot.png", async (_req, reply) => {
+    const { renderJackpotCard } = await import("../telegram/jackpot-card.js");
+    const { publicSiteOrigin } = await import("../telegram/links.js");
+    const png = await renderJackpotCard(runtime.pot(), publicSiteOrigin());
+    return reply
+      .header("content-type", "image/png")
+      .header("cache-control", "no-store")
+      .send(png);
+  });
+
   app.get("/window/current", async () => {
     return runtime.currentWindow(new Date());
   });
@@ -69,6 +80,30 @@ export function buildServer(runtime: BellRuntime) {
     return {
       ...odds,
       message: odds.message ?? (odds.tickets > 0 ? undefined : "No tickets this window"),
+    };
+  });
+
+  app.get("/fixture/trades", async (_req, reply) => {
+    if (!config.fixtureMode) {
+      return reply.code(404).send({
+        error: "Not found",
+        message: "Fixture trades are only listed while FIXTURE_MODE=true",
+      });
+    }
+    const { loadFixtureRows } = await import("../indexer/adapters/fixture.js");
+    const rows = loadFixtureRows();
+    return {
+      fixtureMode: true,
+      count: rows.length,
+      trades: rows.map((row) => ({
+        txHash: row.txHash,
+        logIndex: row.logIndex,
+        kind: row.kind,
+        wallet: row.wallet.toLowerCase(),
+        gmeAmount: row.gmeAmount,
+        bellAmount: row.bellAmount,
+        occurredAt: row.occurredAt,
+      })),
     };
   });
 

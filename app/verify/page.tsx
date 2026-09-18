@@ -9,7 +9,7 @@ import { publicApiBase } from "@/lib/api-base";
 export const metadata = {
   title: "Verify a ring · Closing Bell ($BELL)",
   description:
-    "Same ticket bag + same public formula → same winner. Check a Closing Bell ring in one tap.",
+    "A person does not pick the winner. The public Closing Bell formula picks one wallet at random from the locked ticket list. Same list + same formula → same wallet. Check any ring on /verify.",
 };
 
 export default function VerifyPage() {
@@ -43,8 +43,10 @@ export default function VerifyPage() {
           Verify a <span className="brass-text">ring</span>
         </h1>
         <p className="mt-5 max-w-xl text-[1.05rem] leading-relaxed text-ink-2">
-          Same ticket bag + same public formula → same winner. Check it in one
-          tap.
+          A person does not pick the winner. The public Closing Bell formula
+          (closing-bell-draw-v1) picks one wallet at random from the locked
+          ticket list. Same list + same formula → same wallet. Re-check any ring
+          here.
         </p>
 
         <div className="mt-10">

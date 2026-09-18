@@ -23,7 +23,7 @@ const LIVE: Item[] = [
     id: "telegram-bot",
     title: "Telegram + Bellwether bot",
     blurb:
-      "/pot, /jackpot, /verify, win celebration pins, and community commands in the channel.",
+      "/pot, /jackpot, /how, /verify, /fairness and /random (same answer), win celebration pins, and community commands in the channel.",
     status: "live",
   },
   {

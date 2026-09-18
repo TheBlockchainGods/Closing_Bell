@@ -28,19 +28,26 @@ export default function DocsFaqPage() {
 
       <DocsH2 id="who-picks">Who picks the winner?</DocsH2>
       <DocsP>
-        A person does not pick the winning wallet. The Closing Bell automated
-        draw service on AWS runs{" "}
-        <DocsCode>closing-bell-draw-v1</DocsCode> on the full ticket list from
-        when entries stopped. Same list + same formula, same wallet. Anyone can
-        re-run it on{" "}
+        A person does not pick the winner. The public Closing Bell formula{" "}
+        <DocsCode>closing-bell-draw-v1</DocsCode> picks one wallet at random from
+        the locked ticket list. Same list + same formula → same wallet. Check any
+        ring on{" "}
         <Link href="/verify" className="text-brass-200 hover:text-tape">
-          Verify
+          /verify
         </Link>
         . More detail:{" "}
         <Link href="/docs/draw" className="text-brass-200 hover:text-tape">
           Bag lock and the draw
         </Link>
         .
+      </DocsP>
+      <DocsP>
+        Technical: Node.js + TypeScript keeper on AWS Lightsail. Shared{" "}
+        <DocsCode>packages/fairness</DocsCode>, formula{" "}
+        <DocsCode>closing-bell-draw-v1</DocsCode>. Seed is keccak256 over public
+        inputs. Pick is a weighted walk over the locked ticket snapshot (10%
+        odds cap on draw weight only). /verify runs the same math. We do not
+        claim on-chain VRF. We claim a public formula you can recompute.
       </DocsP>
 
       <DocsH2 id="verify">How do I verify a ring?</DocsH2>
@@ -109,12 +116,24 @@ export default function DocsFaqPage() {
         <DocsCode>BELLS_24_7</DocsCode> is on (default).
       </DocsP>
 
-      <DocsH2 id="telegram">Telegram commands?</DocsH2>
+      <DocsH2 id="telegram">How do I use the Bellwether Telegram bot?</DocsH2>
+      <DocsP>
+        Open{" "}
+        <Link href="/docs/telegram" className="text-brass-200 hover:text-tape">
+          Bellwether Telegram bot
+        </Link>{" "}
+        or the community chat, then type a slash command.
+      </DocsP>
       <DocsUl>
         <li>
-          <DocsCode>/pot</DocsCode> · <DocsCode>/odds</DocsCode> ·{" "}
-          <DocsCode>/ladder</DocsCode> · <DocsCode>/next</DocsCode> ·{" "}
-          <DocsCode>/how</DocsCode>
+          <DocsCode>/fairness</DocsCode> and <DocsCode>/random</DocsCode> (also{" "}
+          <DocsCode>/draw</DocsCode>): same reply. Who picks the winner, plus
+          the technical stack.
+        </li>
+        <li>
+          <DocsCode>/pot</DocsCode> · <DocsCode>/jackpot</DocsCode> ·{" "}
+          <DocsCode>/how</DocsCode> · <DocsCode>/verify</DocsCode> ·{" "}
+          <DocsCode>/next</DocsCode> · <DocsCode>/odds 0x...</DocsCode>
         </li>
       </DocsUl>
 
@@ -129,8 +148,8 @@ export default function DocsFaqPage() {
 
       <DocsPager
         prev={{
-          href: "/docs/operations",
-          label: "Automated vs operator-run",
+          href: "/docs/telegram",
+          label: "Bellwether Telegram bot",
         }}
       />
     </article>

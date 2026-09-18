@@ -15,9 +15,11 @@
   },
   "dependencies": {
     "@closing-bell/fairness": "*",
+    "@resvg/resvg-js": "^2.6.2",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.1",
     "pg": "^8.13.3",
+    "sharp": "^0.35.4",
     "viem": "^2.23.2"
   },
   "devDependencies": {

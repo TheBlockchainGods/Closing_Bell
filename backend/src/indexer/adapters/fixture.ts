@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import type { ChainTradeEvent, VenueAdapter } from "../types.js";
 
-interface FixtureRow {
+export interface FixtureRow {
   adapter?: string;
   txHash: string;
   logIndex: number;
@@ -19,12 +19,12 @@ interface FixtureRow {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function loadFixtureRows(): FixtureRow[] {
+export function loadFixtureRows(): FixtureRow[] {
   const path = resolve(__dirname, "../../../fixtures/swaps.json");
   return JSON.parse(readFileSync(path, "utf8")) as FixtureRow[];
 }
 
-function toEvent(row: FixtureRow): ChainTradeEvent {
+export function fixtureRowToEvent(row: FixtureRow): ChainTradeEvent {
   return {
     eventId: `${row.txHash.toLowerCase()}:${row.logIndex}`,
     adapter: row.adapter ?? "fixture",
@@ -49,7 +49,7 @@ export class FixtureAdapter implements VenueAdapter {
   private readonly events: ChainTradeEvent[];
 
   constructor(rows: FixtureRow[] = loadFixtureRows()) {
-    this.events = rows.map(toEvent).sort((a, b) => {
+    this.events = rows.map(fixtureRowToEvent).sort((a, b) => {
       if (a.blockNumber === b.blockNumber) return a.logIndex - b.logIndex;
       return a.blockNumber < b.blockNumber ? -1 : 1;
     });

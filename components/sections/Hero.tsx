@@ -71,8 +71,9 @@ export function Hero() {
               {...enter(0.16)}
             >
               On Robinhood Chain, the bell can ring three times (Open, Lunch,
-              Close), and one wallet takes the pot. Robinhood Chain never
-              sleeps.
+              Close). A person does not pick the winner. The public Closing Bell
+              formula picks one wallet at random from the locked ticket list.
+              Check any ring on /verify. Robinhood Chain never sleeps.
             </motion.p>
 
             <motion.div

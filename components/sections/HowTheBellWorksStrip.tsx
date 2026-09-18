@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 
+import { COMMUNITY } from "@/lib/community";
 import { Reveal } from "@/components/ui/Reveal";
 import { EASE_BELL } from "@/lib/motion";
 
@@ -78,7 +79,34 @@ export function HowTheBellWorksStrip() {
           </ol>
         </Reveal>
 
-        <Reveal delay={0.14} className="mt-5">
+        <Reveal delay={0.12}>
+          <p className="mx-auto mt-5 max-w-xl text-center text-[0.92rem] leading-relaxed text-ink-2">
+            At the ring, the public formula picks the wallet. Check any ring on{" "}
+            <a
+              href="/verify"
+              className="text-brass-200 underline-offset-2 transition-colors hover:text-tape hover:underline"
+            >
+              /verify
+            </a>
+            .
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.14}>
+          <p className="mx-auto mt-3 max-w-xl text-center text-[0.92rem] leading-relaxed text-ink-2">
+            Use our Bellwether Telegram bot in the community.{" "}
+            <a
+              href={COMMUNITY.telegram.href}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-brass-200 underline-offset-2 transition-colors hover:text-tape hover:underline"
+            >
+              Open Telegram
+            </a>
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.18} className="mt-5">
           <div className="overflow-hidden rounded-sm border border-line bg-floor-950/40">
             <motion.div
               initial={reduceMotion ? false : { opacity: 0.85, scale: 0.992 }}

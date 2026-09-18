@@ -109,7 +109,7 @@ export function BellPot() {
       index="02"
       eyebrow="Live Bell Pot"
       title="The pot, live and in the open"
-      lead="Every buy on the GME pair routes a slice into the Bell Pot, wherever you trade. It sits in the open, climbing, until the next bell empties it into one wallet."
+      lead="Every buy on the GME pair routes a slice into the Bell Pot, wherever you trade. It sits in the open, climbing, until the public formula picks one wallet from the locked ticket list."
       aside={
         <LivePill status={bell.feedStatus} fixtureMode={bell.fixtureMode} />
       }

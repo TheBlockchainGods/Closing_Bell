@@ -25,15 +25,16 @@ export default function DocsPayoutsPage() {
       <DocsH1>Payouts</DocsH1>
       <DocsLead>
         When a ring completes with a winner and enough pot, GME moves from the
-        public jackpot wallet to the formula winner. The draw always runs. The
-        transfer may be skipped when dry-run is configured.
+        public jackpot wallet to the formula winner. A person does not pick that
+        wallet. The public formula does. The draw always runs. The transfer may
+        be skipped when dry-run is configured.
       </DocsLead>
 
       <DocsH2 id="flow">Live payout flow</DocsH2>
       <DocsUl>
         <li>
-          Keeper selects the winner with{" "}
-          <DocsCode>closing-bell-draw-v1</DocsCode> and publishes the receipt.
+          Public formula <DocsCode>closing-bell-draw-v1</DocsCode> picks the
+          winner and the receipt is published.
         </li>
         <li>
           Payout amount is the pot intended for that ring (jackpot wallet GME

@@ -22,11 +22,11 @@ import type {
 export const PONS_URL = "https://pons.exchange";
 
 export const POT: PotSnapshot = {
-  inPotGme: 1_284.62,
-  accruingGme: 96.41,
+  inPotGme: 0,
+  accruingGme: 0,
   gmePriceUsd: 23.18,
   /** Seeded all-time payouts across the winners feed below. */
-  totalPaidOutGme: 11_169.44,
+  totalPaidOutGme: 0,
 };
 
 export const MARKET: MarketSnapshot = {
@@ -214,8 +214,8 @@ export const HOW_STEPS: HowStep[] = [
   {
     index: 3,
     title: "Ring",
-    kicker: "One wallet takes the pot",
-    body: "At the bell, one ticket is drawn and the full Bell Pot is paid to that wallet in GME. Then every Bell ticket wipes and the next window opens flat.",
+    kicker: "The public formula picks the wallet",
+    body: "A person does not pick the winner. The public Closing Bell formula (closing-bell-draw-v1) picks one wallet at random from the locked ticket list. Same list + same formula → same wallet. Check any ring on /verify. Then tickets wipe and the next window opens flat.",
     rule: "No rollover, no carry. Each window starts from zero tickets.",
   },
 ];
@@ -239,7 +239,7 @@ export const LOCKED_RULES: LockedRule[] = [
   {
     id: "ring",
     title: "The bell settles everything",
-    body: "When the bell rings, the winner is paid the full Bell Pot in GME and every Bell ticket across every wallet wipes to zero.",
+    body: "When the bell rings, the public formula closing-bell-draw-v1 picks one wallet at random from the locked ticket list. A person does not pick. The formula winner is paid the Bell Pot in GME and every Bell ticket wipes to zero. Check any ring on /verify.",
   },
   {
     id: "schedule",

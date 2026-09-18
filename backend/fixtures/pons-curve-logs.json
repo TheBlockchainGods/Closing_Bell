@@ -1,0 +1,46 @@
+{
+  "quoteDecimals": 18,
+  "tokenDecimals": 18,
+  "curve": "0x1111111111111111111111111111111111111111",
+  "gmeUsdPrice": 20,
+  "minBuyUsd": 5,
+  "ticketsPerUsd": 1000,
+  "events": [
+    {
+      "event": "CurveBuy",
+      "blockNumber": 100,
+      "logIndex": 0,
+      "txHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "buyer": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1",
+      "recipient": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+      "quoteInWei": "10000000000000000000",
+      "tokensOutWei": "1000000000000000000000",
+      "feeWei": "0",
+      "taxWei": "0"
+    },
+    {
+      "event": "CurveBuy",
+      "blockNumber": 101,
+      "logIndex": 2,
+      "txHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "buyer": "0xccccccccccccccccccccccccccccccccccccccc1",
+      "recipient": "0xccccccccccccccccccccccccccccccccccccccc1",
+      "quoteInWei": "5000000000000000000",
+      "tokensOutWei": "400000000000000000000",
+      "feeWei": "0",
+      "taxWei": "0"
+    },
+    {
+      "event": "CurveSell",
+      "blockNumber": 102,
+      "logIndex": 1,
+      "txHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "seller": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+      "recipient": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+      "tokensInWei": "200000000000000000000",
+      "quoteOutWei": "2000000000000000000",
+      "feeWei": "0",
+      "taxWei": "0"
+    }
+  ]
+}

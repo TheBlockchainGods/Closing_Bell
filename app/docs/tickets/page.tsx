@@ -27,7 +27,12 @@ export default function DocsTicketsPage() {
       <DocsLead>
         However you buy, you earn tickets. An on-chain buy of $BELL on the GME
         pair during an open window mints Bell tickets. You do not need to trade
-        through this website.
+        through this website. A person does not pick the winner. The public
+        formula picks one wallet at random from the locked ticket list (see{" "}
+        <Link href="/docs/draw" className="text-brass-200 hover:text-tape">
+          Bag lock and the draw
+        </Link>
+        ).
       </DocsLead>
 
       <DocsH2 id="mint">Mint on buy</DocsH2>
