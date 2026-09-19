@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import {
-  DocsCallout,
   DocsCode,
   DocsH1,
   DocsH2,
@@ -14,8 +13,7 @@ import {
 
 export const metadata: Metadata = {
   title: "Payouts",
-  description:
-    "How the Bell Pot pays the formula winner, and what dry-run mode means.",
+  description: "How the Bell Pot pays the formula winner in GME.",
 };
 
 export default function DocsPayoutsPage() {
@@ -26,11 +24,10 @@ export default function DocsPayoutsPage() {
       <DocsLead>
         When a ring completes with a winner and enough pot, GME moves from the
         public jackpot wallet to the formula winner. A person does not pick that
-        wallet. The public formula does. The draw always runs. The transfer may
-        be skipped when dry-run is configured.
+        wallet. The public formula does.
       </DocsLead>
 
-      <DocsH2 id="flow">Live payout flow</DocsH2>
+      <DocsH2 id="flow">Payout flow</DocsH2>
       <DocsUl>
         <li>
           Public formula <DocsCode>closing-bell-draw-v1</DocsCode> picks the
@@ -42,24 +39,14 @@ export default function DocsPayoutsPage() {
           <DocsCode>MIN_POT_GME</DocsCode>).
         </li>
         <li>
-          When live, the payout transaction is sent to the formula winner. That
-          send is operator- or keeper-assisted depending on deployment. Humans
-          still do not choose the wallet.
+          The payout transaction is sent to the formula winner. That send is
+          keeper- or operator-assisted depending on deployment. Humans still do
+          not choose the wallet.
         </li>
         <li>
           Tickets wipe. The next window opens on schedule.
         </li>
       </DocsUl>
-
-      <DocsH2 id="dry-run">Dry-run payouts</DocsH2>
-      <DocsCallout title="Optional env note">
-        <p>
-          If <DocsCode>DRY_RUN_PAYOUTS</DocsCode> is enabled, the keeper still
-          runs the formula and publishes the winner and receipt. The GME
-          transfer is skipped. Use this for staging or soft launch. It is not
-          the default story for the live product.
-        </p>
-      </DocsCallout>
 
       <DocsH2 id="operator">What operators still do</DocsH2>
       <DocsP>

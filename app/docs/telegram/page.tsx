@@ -69,14 +69,16 @@ export default function DocsTelegramPage() {
           jackpot pool, next ring, ticket cutoff.
         </li>
         <li>
-          <DocsCode>/how</DocsCode>: how tickets, fees, and rings work.
+          <DocsCode>/how</DocsCode>: how tickets, fees, and rings work, including
+          Open 9:30 AM ET, Lunch 12:30 PM ET, Close 4:00 PM ET.
         </li>
         <li>
           <DocsCode>/verify</DocsCode>: how to check a published ring on the
           site. No JSON paste in Telegram.
         </li>
         <li>
-          <DocsCode>/next</DocsCode>: next Open / Lunch / Close and the live pot.
+          <DocsCode>/next</DocsCode>: next Open / Lunch / Close (Open 9:30 AM ET,
+          Lunch 12:30 PM ET, Close 4:00 PM ET) and the live pot.
         </li>
         <li>
           <DocsCode>/odds 0x...</DocsCode>: tickets and odds for one wallet.
@@ -91,7 +93,7 @@ export default function DocsTelegramPage() {
       <DocsP>
         Summary: a person does not pick the winner. The public Closing Bell
         formula <DocsCode>closing-bell-draw-v1</DocsCode> picks one wallet at
-        random from the locked ticket list. Same list + same formula → same
+        random from the locked ticket list. Same list + same formula -> same
         wallet. Check any ring on /verify.
       </DocsP>
       <DocsP>
@@ -108,8 +110,7 @@ export default function DocsTelegramPage() {
       <DocsP>
         Qualifying buys, ticket-entry close, ring skip or win celebration
         (pinned), and a fairness pin when no win pin is up. Win celebration
-        shows the full winner wallet and a payout tx line (honest dry-run when
-        no GME was sent).
+        shows the full winner wallet and a payout tx line.
       </DocsP>
 
       <DocsPager

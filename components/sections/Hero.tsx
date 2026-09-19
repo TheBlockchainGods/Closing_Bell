@@ -13,11 +13,9 @@ import { LaunchBar } from "@/components/LaunchBar";
 import { TrustStrip } from "@/components/TrustStrip";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { useBell } from "@/lib/bell-store";
-import { DRY_RUN_PAYOUTS } from "@/lib/launch";
 import { PONS_URL } from "@/lib/mock-data";
 import { EASE_BELL } from "@/lib/motion";
 import { useNow } from "@/lib/use-clock";
-import { cn } from "@/lib/cn";
 
 export function Hero() {
   const bell = useBell();
@@ -46,12 +44,7 @@ export function Hero() {
   return (
     <section
       id="top"
-      className={cn(
-        "relative flex flex-col overflow-hidden",
-        DRY_RUN_PAYOUTS
-          ? "min-h-[calc(100dvh-6.75rem)]"
-          : "min-h-[calc(100dvh-4rem)]",
-      )}
+      className="relative flex min-h-[calc(100dvh-4rem)] flex-col overflow-hidden"
     >
       <HeroBackdrop clip={clip} />
       <div className="relative z-10 border-b border-line/80 bg-floor-1000/40 backdrop-blur-md">

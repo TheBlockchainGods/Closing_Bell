@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import {
-  DocsCallout,
   DocsCode,
   DocsH1,
   DocsH2,
@@ -70,25 +69,12 @@ export default function DocsOperationsPage() {
             "Payout tx (GME to winner)",
             "Operator / keeper",
             <>
-              Always to the formula winner. When{" "}
-              <DocsCode>DRY_RUN_PAYOUTS=false</DocsCode> and keys are set, the
-              keeper can send. Ops may send the same destination manually. Never
-              a hand-picked wallet.
+              Always to the formula winner. Keeper or ops send GME to that
+              wallet. Never a hand-picked address.
             </>,
           ],
         ]}
       />
-
-      <DocsCallout title="Dry-run">
-        <p>
-          With <DocsCode>DRY_RUN_PAYOUTS=true</DocsCode>, draw and receipt still
-          run. The GME transfer is skipped. See{" "}
-          <Link href="/docs/payouts" className="text-brass-200 hover:text-tape">
-            Payouts
-          </Link>
-          .
-        </p>
-      </DocsCallout>
 
       <DocsH2 id="not-ops">What operators never do</DocsH2>
       <DocsP>

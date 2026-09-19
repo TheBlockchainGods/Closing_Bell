@@ -57,8 +57,7 @@ export default function DocsArchitecturePage() {
         </li>
         <li>
           Launch knobs: <DocsCode>NEXT_PUBLIC_TOKEN_ADDRESS</DocsCode>,{" "}
-          <DocsCode>NEXT_PUBLIC_CHART_URL</DocsCode>,{" "}
-          <DocsCode>NEXT_PUBLIC_DRY_RUN_PAYOUTS</DocsCode>.
+          <DocsCode>NEXT_PUBLIC_CHART_URL</DocsCode>.
         </li>
       </DocsUl>
 
@@ -162,24 +161,24 @@ export default function DocsArchitecturePage() {
             "Local fixture",
             "Docker Compose API + Postgres. Fixture swaps drive tickets. Telegram optional.",
             <>
-              <DocsCode>FIXTURE_MODE=true</DocsCode>,{" "}
-              <DocsCode>DRY_RUN_PAYOUTS=true</DocsCode>
+              <DocsCode>FIXTURE_MODE=true</DocsCode>
             </>,
           ],
           [
             "Cloud (Lightsail)",
-            "Same container image on Lightsail with managed Postgres. Public /health API. Fixture tape until launch motion.",
+            "Same container image on Lightsail with managed Postgres. Public /health and live on-chain /pot. Indexer idles until TOKEN_ADDRESS is set.",
             <>
-              <DocsCode>FIXTURE_MODE=true</DocsCode>,{" "}
-              <DocsCode>DRY_RUN_PAYOUTS=true</DocsCode> until launch motion.
+              <DocsCode>FIXTURE_MODE=false</DocsCode>
             </>,
           ],
           [
-            "Go-live (one-motion)",
-            "Pre-stage CREATE2 token and curve, then launch and first-block buys together. Backfill from START_BLOCK if the process starts late. Amplify CA/chart can lag. Flip dry-run off only after tickets mint.",
+            "PONS create (one-motion)",
+            "Pre-stage CREATE2 token and curve, then launch and first-block buys together. Backfill from START_BLOCK if the process starts late. Amplify CA/chart can lag.",
             <>
-              First <DocsCode>FIXTURE_MODE=false</DocsCode>, then later{" "}
-              <DocsCode>DRY_RUN_PAYOUTS=false</DocsCode>
+              <DocsCode>FIXTURE_MODE=false</DocsCode>, set{" "}
+              <DocsCode>TOKEN_ADDRESS</DocsCode>,{" "}
+              <DocsCode>CURVE_OR_POOL</DocsCode>,{" "}
+              <DocsCode>START_BLOCK</DocsCode>
             </>,
           ],
         ]}

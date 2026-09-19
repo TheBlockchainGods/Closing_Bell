@@ -88,7 +88,7 @@ Anyone can check that a published winner matches the public formula and inputs.
 
 Advanced (collapsed) still supports paste/upload JSON and the full formula write-up. Draw math lives in [`packages/fairness`](./packages/fairness), shared with the backend keeper.
 
-MATCH is about the draw math matching the receipt. Payout settlement is separate. Optional sitewide banner while `NEXT_PUBLIC_DRY_RUN_PAYOUTS=true`: payouts dry-run until go-live; draws and verify still use public formula closing-bell-draw-v1.
+MATCH is about the draw math matching the receipt. Payout settlement is separate.
 
 Short rules summary in the footer; full docs: [/docs](http://localhost:3000/docs).
 
@@ -100,7 +100,6 @@ Amplify env (must be set before the first build so they bake into the client):
 
 ```
 NEXT_PUBLIC_API_BASE=https://closing-bell-api.qdwgj1kmyrm0a.us-west-2.cs.amazonlightsail.com
-NEXT_PUBLIC_DRY_RUN_PAYOUTS=true
 ```
 
 `amplify.yml` at the repo root runs `npm ci` then `npm run build` on Node 22.

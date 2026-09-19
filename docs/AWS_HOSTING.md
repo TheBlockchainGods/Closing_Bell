@@ -61,7 +61,6 @@ Repo already on GitHub: [TheBlockchainGods/Closing_Bell](https://github.com/TheB
 | Name | Value |
 | --- | --- |
 | `NEXT_PUBLIC_API_BASE` | `https://closing-bell-api.qdwgj1kmyrm0a.us-west-2.cs.amazonlightsail.com` |
-| `NEXT_PUBLIC_DRY_RUN_PAYOUTS` | `true` |
 | `NODE_VERSION` | `22` |
 
 8. Save and deploy.

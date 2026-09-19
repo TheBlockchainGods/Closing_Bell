@@ -118,20 +118,6 @@ export default function DocsIntroPage() {
         contract is live). No fake CA or chart links before that.
       </DocsP>
 
-      <DocsCallout title="Payouts mode">
-        <p>
-          Live draw math always runs. Whether GME actually leaves the jackpot
-          wallet depends on deployment flags such as{" "}
-          <code className="font-mono text-brass-200">DRY_RUN_PAYOUTS</code>. When
-          dry-run is on, the winner and receipt are still published; the transfer
-          is skipped. See{" "}
-          <Link href="/docs/payouts" className="text-brass-200 hover:text-tape">
-            Payouts
-          </Link>
-          .
-        </p>
-      </DocsCallout>
-
       <DocsPager next={{ href: "/docs/tickets", label: "How tickets work" }} />
     </article>
   );

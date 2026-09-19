@@ -11,9 +11,9 @@ Correct model:
 - Amplify CA/chart links can lag. Indexing cannot
 - Live GME payouts only after tickets are confirmed for those first-block buys
 
-Production stays `FIXTURE_MODE=true` and `DRY_RUN_PAYOUTS=true` until the launch motion below. Do not invent a CA. Do not point Lightsail at a random PONS token.
+Production is `FIXTURE_MODE=false` (idle indexer, live on-chain `/pot`) and `DRY_RUN_PAYOUTS=true` until founder approval to send GME. Do not invent a CA. Do not point Lightsail at a random PONS token.
 
-The pot starts at **0 GME**. It builds later from fees swept into the jackpot wallet. Gas to send GME is ETH on Robinhood Chain (~0.004 ETH in that wallet). Indexer reads chain logs over RPC. It does not depend on DexScreener or GeckoTerminal.
+The pot is the on-chain GME balance of the jackpot wallet plus accruing unclaimed PONS creator share. Rings still skip below `MIN_POT_GME`. Gas to send GME is ETH on Robinhood Chain (~0.004 ETH in that wallet). Indexer reads chain logs over RPC. It does not depend on DexScreener or GeckoTerminal.
 
 ## Who does what
 
@@ -21,8 +21,8 @@ The pot starts at **0 GME**. It builds later from fees swept into the jackpot wa
 
 - PONS CurveBuy / CurveSell decode + Uniswap v4 Swap after PoolCreated
 - Backfill: cursor seeds `START_BLOCK - 1` so the deploy block is included even if the process starts minutes late
-- Empty pot skips the ring (no fake win pin). Dry-run pin says no GME sent
-- Lightsail image on fixture + dry-run, pot stubs 0
+- Empty bag or pot below `MIN_POT_GME` skips the ring (no fake win pin). Dry-run pin says no GME sent
+- Lightsail image on live `/pot`, `FIXTURE_MODE=false`, `DRY_RUN_PAYOUTS=true`
 - This file is the launch checklist
 
 ### FOUNDER ONLY (do not paste secrets in chat)
@@ -38,7 +38,7 @@ The pot starts at **0 GME**. It builds later from fees swept into the jackpot wa
 
 ### 1. Backend ready (Cursor)
 
-Latest Lightsail image. Indexer tests green. `FIXTURE_MODE=true`, `DRY_RUN_PAYOUTS=true`. `/health` ok. `/pot` shows 0 GME.
+Latest Lightsail image. Indexer tests green. `FIXTURE_MODE=false`, `DRY_RUN_PAYOUTS=true`. `/health` ok. `/pot` is on-chain GME (not fixture tape). `/jackpot` is empty until CA + real tickets.
 
 ### 2. Founder: wallet + secrets on Lightsail
 
@@ -75,17 +75,21 @@ If tickets stay 0: rollback (below).
 
 ### 7. Amplify (can lag)
 
-`NEXT_PUBLIC_TOKEN_ADDRESS`, `NEXT_PUBLIC_CHART_URL` (real links only). Keep `NEXT_PUBLIC_DRY_RUN_PAYOUTS=true` until live sends. Site banner is honest until then.
+`NEXT_PUBLIC_TOKEN_ADDRESS`, `NEXT_PUBLIC_CHART_URL` (real links only). Site has no public dry-run banner.
 
-### 8. Live GME payouts
+### 8. Live GME payouts (FOUNDER APPROVAL ONLY, do not flip yet)
+
+Keep `DRY_RUN_PAYOUTS=true` until the founder explicitly approves live sends.
 
 Only after tickets are confirmed. After a clean dry ring **or** first live ring with a real pot:
 
-1. Jackpot wallet holds enough **GME** for the announced display pot (fees swept in; starts at 0 so early rings skip)
-2. `DRY_RUN_PAYOUTS=false`, restart
-3. Boot fails if key / GME token / RPC missing, or key ≠ `JACKPOT_WALLET`
-4. Win pin: full wallet, real `tx_hash`, View on explorer
-5. Amplify `NEXT_PUBLIC_DRY_RUN_PAYOUTS=false`
+1. Jackpot wallet holds enough **GME** for the announced display pot (fees swept in)
+2. On Lightsail only: set `DRY_RUN_PAYOUTS=false`, rebuild/restart. Do not set this in chat.
+3. Leave `JACKPOT_SHARE_BPS=5000`. Do not invent `TOKEN_ADDRESS` here if already set from launch.
+4. Boot fails if key / GME token / RPC missing, or key ≠ `JACKPOT_WALLET`
+5. Live path: one ERC-20 `transfer` of `displayPot` GME to the **drawn winner only** (`closing-bell-draw-v1` on the locked ticket list). Send-once per `windowId`; persist `tx_hash`. Skip if pot < `MIN_POT_GME`. No send to random addresses, no multi-pay of the pool, no send without a settled draw.
+6. Win pin: full wallet, real `tx_hash`, View on explorer
+7. Amplify CA/chart env only after the create tx (no public dry-run flag)
 
 Rings with display pot below `MIN_POT_GME` (default 1) skip. No fake win pin.
 
@@ -102,18 +106,19 @@ Indexing wrong or empty bag after a real buy:
 
 | Var | Notes |
 | --- | --- |
-| `RPC_URL` | RH Chain. Alias `CHAIN_RPC_URL` |
+| `RPC_URL` | Alchemy RH Chain. Alias `CHAIN_RPC_URL` |
+| `RPC_FALLBACK_URL` | Optional. Default `https://rpc.mainnet.chain.robinhood.com`. Indexer only |
 | `TOKEN_ADDRESS` | Predicted or live `$BELL` CA |
 | `CURVE_OR_POOL` | Predicted or live curve |
-| `START_BLOCK` | Deploy block or earlier. Cursor uses START_BLOCK-1 |
+| `START_BLOCK` | Deploy block or earlier. Cursor uses START_BLOCK-1. Live boot refuses a genesis scan if TOKEN is set and tip is multi-million |
 | `FIXTURE_MODE` | `false` at pre-stage or immediately after launch |
 | `GME_TOKEN_ADDRESS` | Quote asset. Required for UV4 after graduation |
 | `PONS_FACTORY_ADDRESS` | Default PONS v2 factory |
 | `PONS_HOOK_ADDRESS` | Default meme hook |
 | `UNISWAP_V4_POOL_MANAGER` | Default v4 PoolManager |
-| `JACKPOT_WALLET` | Public pot. Starts 0 GME |
-| `JACKPOT_WALLET_BALANCE_GME` | `0` until you stub or wire a feed |
-| `PONS_CLAIMABLE_GME` | `0` until fee-claim is live |
+| `JACKPOT_WALLET` | Public pot. Starts empty until GME is sent or claimed |
+| `JACKPOT_WALLET_BALANCE_GME` | Local stub only. Unset in prod (live `balanceOf`) |
+| `PONS_CLAIMABLE_GME` | Local stub only. Unset in prod (live PONS escrow/unswept) |
 | `JACKPOT_PRIVATE_KEY` | FOUNDER ONLY. Never commit |
 | `DRY_RUN_PAYOUTS` | `true` until tickets + pot proven |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | FOUNDER ONLY |
@@ -128,7 +133,6 @@ Indexing wrong or empty bag after a real buy:
 | `NEXT_PUBLIC_API_BASE` | Already Lightsail |
 | `NEXT_PUBLIC_TOKEN_ADDRESS` | Step 7, can lag |
 | `NEXT_PUBLIC_CHART_URL` | Step 7, can lag |
-| `NEXT_PUBLIC_DRY_RUN_PAYOUTS` | `false` only after step 8 |
 
 ## Backfill (first-block snipes)
 

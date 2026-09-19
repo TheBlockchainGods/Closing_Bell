@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { Wordmark } from "@/components/brand/Wordmark";
-import { DryRunBanner } from "@/components/DryRunBanner";
 import { ButtonLink } from "@/components/ui/Button";
 import { VerifyClient } from "@/components/verify/VerifyClient";
 import { publicApiBase } from "@/lib/api-base";
@@ -17,7 +16,6 @@ export default function VerifyPage() {
 
   return (
     <div className="min-h-dvh bg-floor-1000 text-ink">
-      <DryRunBanner />
       <header className="border-b border-line bg-floor-950/90">
         <div className="mx-auto flex h-16 w-full max-w-[840px] items-center justify-between gap-4 px-5 sm:px-8">
           <Link

@@ -2,14 +2,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { DocsNav } from "@/components/docs/DocsNav";
-import { DryRunBanner } from "@/components/DryRunBanner";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { ButtonLink } from "@/components/ui/Button";
 
 export function DocsShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-floor-1000 text-ink">
-      <DryRunBanner />
       <header className="sticky top-0 z-30 border-b border-line bg-floor-950/92 backdrop-blur-xl">
         <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center justify-between gap-4 px-5 sm:h-16 sm:px-8">
           <div className="flex min-w-0 items-center gap-4">

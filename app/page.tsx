@@ -1,5 +1,4 @@
 import { Atmosphere } from "@/components/atmosphere/Atmosphere";
-import { DryRunBanner } from "@/components/DryRunBanner";
 import { MotionRoot } from "@/components/MotionRoot";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -25,7 +24,6 @@ export default function Page() {
         >
           Skip to the Bell Pot
         </a>
-        <DryRunBanner />
         <SiteHeader />
         <main className="relative z-10">
           <Hero />
