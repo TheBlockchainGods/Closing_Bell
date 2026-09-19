@@ -93,7 +93,7 @@ export default function DocsTelegramPage() {
       <DocsP>
         Summary: a person does not pick the winner. The public Closing Bell
         formula <DocsCode>closing-bell-draw-v1</DocsCode> picks one wallet at
-        random from the locked ticket list. Same list + same formula -> same
+        random from the locked ticket list. Same list + same formula, same
         wallet. Check any ring on /verify.
       </DocsP>
       <DocsP>
