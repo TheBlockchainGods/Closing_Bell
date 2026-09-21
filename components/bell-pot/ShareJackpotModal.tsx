@@ -3,17 +3,16 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { copyBlob, copyText, downloadBlob } from "@/lib/clipboard";
 import {
-  downloadJackpotSharePng,
   renderJackpotSharePng,
   type JackpotCardAmounts,
 } from "@/lib/jackpot-card-image";
 import {
-  canShareFiles,
+  canUseNativeShareNow,
   formatJackpotShareText,
   JACKPOT_SHARE_LINK,
-  JACKPOT_SITE_URL,
   SHARE_CAPTION_MAX,
   telegramShareHref,
   twitterShareHref,
@@ -35,6 +34,8 @@ type PreviewState =
   | { status: "ready"; url: string; blob: Blob }
   | { status: "error" };
 
+const PNG_NAME = "closing-bell-jackpot.png";
+
 export function ShareJackpotModal({
   open,
   onClose,
@@ -47,12 +48,13 @@ export function ShareJackpotModal({
   const closeRef = useRef<HTMLButtonElement>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
+  const [copiedImage, setCopiedImage] = useState(false);
   const [downloadState, setDownloadState] = useState<
     "idle" | "working" | "done" | "error"
   >("idle");
   const [preview, setPreview] = useState<PreviewState>({ status: "loading" });
-  const [fileShareOk] = useState(() => canShareFiles());
-  const [nativeShareNote, setNativeShareNote] = useState<string | null>(null);
+  const [nativeShareOk] = useState(() => canUseNativeShareNow());
+  const [xShareNote, setXShareNote] = useState<string | null>(null);
 
   const amounts: JackpotCardAmounts = {
     displayPotGme,
@@ -106,7 +108,7 @@ export function ShareJackpotModal({
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(JACKPOT_SHARE_LINK);
+      await copyText(JACKPOT_SHARE_LINK);
       setCopiedLink(true);
       window.setTimeout(() => setCopiedLink(false), 1800);
     } catch {
@@ -114,9 +116,9 @@ export function ShareJackpotModal({
     }
   }
 
-  async function copyText() {
+  async function copyCaption() {
     try {
-      await navigator.clipboard.writeText(shareText);
+      await copyText(shareText);
       setCopiedText(true);
       window.setTimeout(() => setCopiedText(false), 1800);
     } catch {
@@ -129,59 +131,58 @@ export function ShareJackpotModal({
     return renderJackpotSharePng(amounts);
   }
 
-  async function downloadImage() {
+  async function saveImage(): Promise<boolean> {
     setDownloadState("working");
     try {
-      if (preview.status === "ready") {
-        const url = URL.createObjectURL(preview.blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "closing-bell-jackpot.png";
-        a.rel = "noopener";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } else {
-        await downloadJackpotSharePng(amounts);
-      }
+      const blob = await ensureBlob();
+      downloadBlob(blob, PNG_NAME);
       setDownloadState("done");
-      window.setTimeout(() => setDownloadState("idle"), 1800);
+      window.setTimeout(() => setDownloadState("idle"), 2200);
+      return true;
     } catch {
       setDownloadState("error");
+      return false;
     }
   }
 
-  async function shareWithSystem(target: "x" | "telegram") {
-    setNativeShareNote(null);
-    if (fileShareOk) {
+  async function copyImage() {
+    try {
+      const blob = await ensureBlob();
+      await copyBlob(blob);
+      setCopiedImage(true);
+      window.setTimeout(() => setCopiedImage(false), 1800);
+    } catch {
+      setCopiedImage(false);
+    }
+  }
+
+  async function onShareToXClick() {
+    const saved = await saveImage();
+    setXShareNote(
+      saved
+        ? "Image saved. Add it to your X post."
+        : "X is open with the caption. Download the image to attach it.",
+    );
+  }
+
+  async function shareFromDevice() {
+    if (!nativeShareOk) return;
+    try {
+      const blob = await ensureBlob();
+      const file = new File([blob], PNG_NAME, { type: "image/png" });
+      await navigator.share({
+        text: shareText,
+        url: JACKPOT_SHARE_LINK,
+        files: [file],
+      });
+    } catch (err) {
+      if (isAbortError(err)) return;
       try {
-        const blob = await ensureBlob();
-        const file = new File([blob], "closing-bell-jackpot.png", {
-          type: "image/png",
-        });
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({
-            text: shareText,
-            url: JACKPOT_SITE_URL,
-            files: [file],
-          });
-          return;
-        }
-      } catch (err) {
-        if (isAbortError(err)) return;
+        await navigator.share({ text: shareText, url: JACKPOT_SHARE_LINK });
+      } catch (retryErr) {
+        if (isAbortError(retryErr)) return;
       }
     }
-
-    if (target === "x") {
-      setNativeShareNote(
-        "X opens with the caption only. Download the image to attach it on desktop.",
-      );
-      window.open(xHref, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    window.open(tgHref, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -221,7 +222,8 @@ export function ShareJackpotModal({
                   Share the jackpot
                 </h2>
                 <p className="mt-1.5 text-[0.88rem] leading-relaxed text-ink-3">
-                  Caption, card preview, and one-tap post.
+                  Opens X with the live caption. Save the card and attach it
+                  to the post.
                 </p>
               </div>
               <button
@@ -261,27 +263,45 @@ export function ShareJackpotModal({
             </div>
 
             <div className="space-y-2.5 px-5 py-5 sm:px-6">
-              <Button
+              <ButtonLink
+                href={xHref}
                 variant="secondary"
                 className="w-full justify-between"
-                onClick={() => void shareWithSystem("x")}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => void onShareToXClick()}
               >
                 <span>Share to X</span>
                 <span className="font-mono text-[0.58rem] normal-case tracking-normal text-ink-3">
-                  {fileShareOk ? "text + image" : "caption"}
+                  caption
                 </span>
-              </Button>
+              </ButtonLink>
 
-              <Button
+              <ButtonLink
+                href={tgHref}
                 variant="secondary"
                 className="w-full justify-between"
-                onClick={() => void shareWithSystem("telegram")}
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 <span>Share to Telegram</span>
                 <span className="font-mono text-[0.58rem] normal-case tracking-normal text-ink-3">
-                  {fileShareOk ? "text + image" : "caption"}
+                  caption
                 </span>
-              </Button>
+              </ButtonLink>
+
+              {nativeShareOk ? (
+                <Button
+                  variant="secondary"
+                  className="w-full justify-between"
+                  onClick={() => void shareFromDevice()}
+                >
+                  <span>Share from this device</span>
+                  <span className="font-mono text-[0.58rem] normal-case tracking-normal text-ink-3">
+                    phone
+                  </span>
+                </Button>
+              ) : null}
 
               <Button
                 variant="secondary"
@@ -297,16 +317,16 @@ export function ShareJackpotModal({
               <Button
                 variant="secondary"
                 className="w-full justify-between"
-                onClick={downloadImage}
+                onClick={() => void saveImage()}
                 disabled={downloadState === "working"}
               >
                 <span>
                   {downloadState === "working"
-                    ? "Building image"
+                    ? "Saving image"
                     : downloadState === "done"
-                      ? "Downloaded"
+                      ? "Image saved"
                       : downloadState === "error"
-                        ? "Download failed"
+                        ? "Save failed"
                         : "Download image"}
                 </span>
                 <span className="font-mono text-[0.58rem] normal-case tracking-normal text-ink-3">
@@ -314,16 +334,28 @@ export function ShareJackpotModal({
                 </span>
               </Button>
 
-              {nativeShareNote ? (
-                <p className="text-[0.8rem] leading-relaxed text-ink-3">
-                  {nativeShareNote}
+              <Button
+                variant="secondary"
+                className="w-full justify-between"
+                onClick={() => void copyImage()}
+              >
+                <span>{copiedImage ? "Image copied" : "Copy image"}</span>
+                <span className="font-mono text-[0.58rem] normal-case tracking-normal text-ink-3">
+                  clipboard
+                </span>
+              </Button>
+
+              {xShareNote ? (
+                <p className="text-[0.8rem] leading-relaxed text-ink-3" role="status">
+                  {xShareNote}
                 </p>
-              ) : !fileShareOk ? (
+              ) : (
                 <p className="text-[0.8rem] leading-relaxed text-ink-3">
-                  Desktop X cannot attach the PNG from this button. Use the
-                  preview and Download image, then attach it yourself.
+                  Share to X opens the post composer with the live caption. X
+                  cannot attach a file from this site, so the card PNG is saved
+                  for you to add.
                 </p>
-              ) : null}
+              )}
             </div>
 
             <div className="border-t border-line bg-floor-900/60 px-5 py-4 sm:px-6">
@@ -346,7 +378,7 @@ export function ShareJackpotModal({
                 variant="tape"
                 size="sm"
                 className="mt-3 w-full"
-                onClick={copyText}
+                onClick={() => void copyCaption()}
               >
                 {copiedText ? "Caption copied" : "Copy text"}
               </Button>
