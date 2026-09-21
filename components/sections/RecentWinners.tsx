@@ -2,15 +2,15 @@
 
 import { motion } from "framer-motion";
 
+import { CopyableAddress, PayoutTxLink } from "@/components/ui/CopyableAddress";
 import { Section } from "@/components/ui/Section";
 import { useBell } from "@/lib/bell-store";
 import { cn } from "@/lib/cn";
 import {
   formatEtStamp,
-  formatGme,
+  formatGmePaid,
   formatGmeWhole,
   formatPct,
-  shortAddress,
 } from "@/lib/format";
 import { BELL_LABEL } from "@/lib/market-clock";
 import type { WinnerRecord } from "@/lib/types";
@@ -53,7 +53,7 @@ function Paid({ winner }: { winner: WinnerRecord }) {
   return (
     <span className="whitespace-nowrap">
       <span className="font-display text-[1.05rem] font-bold tabular-nums text-brass-100">
-        {formatGme(winner.amountGme)}
+        {formatGmePaid(winner.amountGme)}
       </span>
       <span className="ml-1.5 font-mono text-[0.62rem] text-ink-3">GME</span>
     </span>
@@ -81,7 +81,7 @@ export function RecentWinners() {
         <div className="rounded-xs border border-line bg-floor-900 px-4 py-3">
           <p className="label-mono">Paid across last six rings</p>
           <p className="mt-1.5 font-display text-[1.3rem] font-bold tabular-nums text-brass-200">
-            {bell.feedStatus === "loading" ? "Reading" : formatGme(total)}
+            {bell.feedStatus === "loading" ? "Reading" : formatGmePaid(total)}
             {bell.feedStatus === "loading" ? null : (
               <span className="ml-1.5 font-mono text-[0.65rem] text-ink-3">
                 GME
@@ -109,16 +109,19 @@ export function RecentWinners() {
                 <KindLabel winner={winner} />
                 <Paid winner={winner} />
               </div>
-              <div className="mt-2 flex items-baseline justify-between gap-3">
-                <span className="font-mono text-[0.76rem] text-ink">
-                  {shortAddress(winner.address)}
-                </span>
-                <Stamp winner={winner} />
+              <div className="mt-2">
+                <CopyableAddress address={winner.address} />
+              </div>
+              <div className="mt-2">
+                <PayoutTxLink txHash={winner.txHash} />
               </div>
               <p className="mt-2 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-ink-3">
                 {formatGmeWhole(winner.ticketsAtRing)} tickets at{" "}
                 {formatPct(winner.oddsAtRing)}
               </p>
+              <div className="mt-1">
+                <Stamp winner={winner} />
+              </div>
             </motion.li>
           ))}
         </ul>
@@ -175,8 +178,11 @@ export function RecentWinners() {
                     <Stamp winner={winner} />
                   </span>
                 </td>
-                <td className="px-5 py-4 font-mono text-[0.8rem] text-ink sm:px-6">
-                  {shortAddress(winner.address)}
+                <td className="px-5 py-4 sm:px-6">
+                  <CopyableAddress address={winner.address} />
+                  <div className="mt-2">
+                    <PayoutTxLink txHash={winner.txHash} />
+                  </div>
                 </td>
                 <td className="px-5 py-4 text-right font-mono text-[0.8rem] tabular-nums text-ink-2 sm:px-6">
                   {formatGmeWhole(winner.ticketsAtRing)}

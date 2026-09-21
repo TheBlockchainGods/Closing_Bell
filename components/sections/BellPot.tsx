@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { CopyableAddress, PayoutTxLink } from "@/components/ui/CopyableAddress";
 import { ShareJackpotModal } from "@/components/bell-pot/ShareJackpotModal";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Button } from "@/components/ui/Button";
@@ -11,11 +12,11 @@ import { useBell } from "@/lib/bell-store";
 import {
   formatEtStamp,
   formatGme,
+  formatGmePaid,
   formatGmeWhole,
   formatPct,
   formatUsd,
   formatUsdPrecise,
-  shortAddress,
 } from "@/lib/format";
 import { BELL_LABEL } from "@/lib/market-clock";
 import { EASE_BELL } from "@/lib/motion";
@@ -273,11 +274,10 @@ export function BellPot() {
                   {BELL_LABEL[winner.kind]} rung
                 </p>
                 <p className="mt-2 font-display type-expanded text-[1.5rem] font-extrabold uppercase leading-tight text-ink">
-                  {formatGme(winner.amountGme)} GME to{" "}
-                  <span className="font-mono text-[1.1rem] font-semibold normal-case tracking-tight text-brass-200">
-                    {shortAddress(winner.address)}
-                  </span>
+                  {formatGmePaid(winner.amountGme)} GME
                 </p>
+                <CopyableAddress className="mt-2" address={winner.address} />
+                <PayoutTxLink className="mt-2" txHash={winner.txHash} />
                 <p className="mt-2 text-[0.85rem] text-ink-2">
                   Held {formatGmeWhole(winner.ticketsAtRing)} tickets at{" "}
                   {formatPct(winner.oddsAtRing)} odds. Every Bell ticket has
@@ -293,10 +293,13 @@ export function BellPot() {
       </AnimatePresence>
 
       {bell.winners[0] ? (
-        <p className="mt-5 max-w-2xl text-[0.85rem] leading-relaxed text-ink-3">
-          Last ring paid {formatGme(bell.winners[0].amountGme)} GME on{" "}
-          {formatEtStamp(bell.winners[0].ringedAt)}.
-        </p>
+        <div className="mt-5 flex max-w-2xl flex-col gap-2">
+          <p className="text-[0.85rem] leading-relaxed text-ink-3">
+            Last ring paid {formatGmePaid(bell.winners[0].amountGme)} GME on{" "}
+            {formatEtStamp(bell.winners[0].ringedAt)}.
+          </p>
+          <PayoutTxLink txHash={bell.winners[0].txHash} />
+        </div>
       ) : null}
 
       <ShareJackpotModal

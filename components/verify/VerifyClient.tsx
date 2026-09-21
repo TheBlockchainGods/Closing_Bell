@@ -4,14 +4,17 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import {
   FIXTURE_RECEIPT,
   FORMULA_VERSION,
+  receiptPaidAmountGme,
+  receiptSettledPaidGme,
   verifyRing,
   type RingReceipt,
   type VerifyResult,
 } from "@closing-bell/fairness";
 
+import { CopyableAddress, PayoutTxLink } from "@/components/ui/CopyableAddress";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
-import { formatEtStamp, formatGme, shortAddress } from "@/lib/format";
+import { formatEtStamp, formatGmePaid } from "@/lib/format";
 
 type SnapshotJson =
   | Record<string, number>
@@ -26,6 +29,8 @@ type RingSummary = {
   timeLabel: string;
   winner: string;
   potLabel: string;
+  paidLabel: string;
+  txHash: string | null;
 };
 
 function pretty(value: unknown): string {
@@ -57,9 +62,9 @@ function bellFromWindowId(windowId: string): string {
 }
 
 function potLabelFromReceipt(receipt: RingReceipt): string {
+  const paid = receiptPaidAmountGme(receipt);
+  if (paid !== null) return `${formatGmePaid(paid)} GME`;
   const raw = receipt.potBalance;
-  const n = typeof raw === "number" ? raw : Number(raw);
-  if (Number.isFinite(n)) return `${formatGme(n)} GME`;
   return `${String(raw)} GME`;
 }
 
@@ -68,13 +73,16 @@ function summarizeReceipt(
   source: RingSource,
 ): RingSummary {
   const when = receipt.ringedAt ?? null;
+  const settled = receiptSettledPaidGme(receipt);
   return {
     receipt,
     source,
     bell: bellFromWindowId(receipt.windowId),
     timeLabel: when ? formatEtStamp(when) : receipt.windowId,
-    winner: shortAddress(receipt.announcedWinner),
+    winner: receipt.announcedWinner,
     potLabel: potLabelFromReceipt(receipt),
+    paidLabel: settled !== null ? "Paid" : "Pot",
+    txHash: receipt.txHash ? String(receipt.txHash) : null,
   };
 }
 
@@ -347,12 +355,22 @@ export function VerifyClient({ apiBase }: { apiBase: string | null }) {
           {loadingLatest ? "Loading ring…" : sourceLabel(summary.source)}
         </p>
 
-        <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
+        <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
           <Field label="Bell" value={summary.bell} />
           <Field label="Time" value={summary.timeLabel} />
-          <Field label="Announced winner" value={summary.winner} mono />
-          <Field label="Pot" value={summary.potLabel} />
+          <Field label={summary.paidLabel} value={summary.potLabel} />
         </dl>
+
+        <div className="mt-5">
+          <p className="label-mono">Announced winner</p>
+          <CopyableAddress className="mt-1.5" address={summary.winner} />
+        </div>
+
+        {summary.txHash ? (
+          <div className="mt-4">
+            <PayoutTxLink txHash={summary.txHash} />
+          </div>
+        ) : null}
 
         <p className="mt-5 text-[0.88rem] leading-relaxed text-ink-3">
           A receipt is the public record of that ring (winner + ticket bag +

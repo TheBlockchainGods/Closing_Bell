@@ -83,6 +83,8 @@ export interface WinnerRecord {
   simulated?: boolean;
   /** True when this pot included weekend accrual, so a Monday Open Bell. */
   carriedWeekend?: boolean;
+  /** Payout transaction hash when GME was sent on-chain. */
+  txHash?: string | null;
 }
 
 export interface AfterHoursSnapshot {

@@ -138,6 +138,58 @@ export class DrawStore {
     return (result.rowCount ?? 0) > 0;
   }
 
+  /**
+   * Attach the on-chain payout to an already-settled ring.
+   * Does not change winner, seed potBalance, snapshot, or formula inputs.
+   */
+  async recordSettledPayout(input: {
+    windowId: string;
+    winner: string;
+    paidAmountGme: string | number;
+    txHash: string;
+  }): Promise<{ ok: true } | { ok: false; reason: string }> {
+    const draw = await this.get(input.windowId);
+    if (!draw) return { ok: false, reason: "missing draw" };
+    if (!draw.winner) return { ok: false, reason: "draw has no winner" };
+    if (draw.winner.toLowerCase() !== input.winner.toLowerCase()) {
+      return { ok: false, reason: "winner mismatch" };
+    }
+    const receipt = mergePaidIntoReceipt(
+      draw.receiptJson,
+      input.paidAmountGme,
+      input.txHash,
+    );
+    const updated = await this.pool.query(
+      `UPDATE draws
+       SET phase = 'paid',
+           dry_run = FALSE,
+           tx_hash = $2,
+           receipt_json = $3::jsonb
+       WHERE window_id = $1
+         AND lower(winner) = lower($4)
+       RETURNING window_id`,
+      [
+        input.windowId,
+        input.txHash,
+        JSON.stringify(receipt),
+        input.winner,
+      ],
+    );
+    if ((updated.rowCount ?? 0) === 0) {
+      return { ok: false, reason: "draw update matched no row" };
+    }
+    await this.pool.query(
+      `UPDATE winners
+       SET amount_gme = $2,
+           tx_hash = $3,
+           dry_run = FALSE
+       WHERE (id = $1 OR window_id = $1)
+         AND lower(address) = lower($4)`,
+      [input.windowId, input.paidAmountGme, input.txHash, input.winner],
+    );
+    return { ok: true };
+  }
+
   async getReceipt(windowId: string): Promise<unknown | null> {
     const { rows } = await this.pool.query(
       `SELECT receipt_json FROM draws WHERE window_id = $1`,
@@ -181,6 +233,22 @@ export class DrawStore {
       ],
     );
   }
+}
+
+export function mergePaidIntoReceipt(
+  existing: unknown,
+  paidAmountGme: string | number,
+  txHash: string,
+): unknown {
+  const base =
+    existing && typeof existing === "object" && !Array.isArray(existing)
+      ? { ...(existing as Record<string, unknown>) }
+      : {};
+  return {
+    ...base,
+    paidAmountGme,
+    txHash,
+  };
 }
 
 function mapDraw(row: Record<string, unknown>): DrawRow {

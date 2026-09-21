@@ -19,6 +19,11 @@ export interface RingReceipt {
   blockhashAtSnapshot: string;
   /** Exact pot string (or number) used in the seed material. */
   potBalance: string | number;
+  /**
+   * GME actually transferred to the winner. Display/history only.
+   * Never part of the seed. Omit when no chain payout was sent.
+   */
+  paidAmountGme?: string | number | null;
   oddsCapBps: number;
   /** keccak256 of the canonical ticket snapshot. */
   snapshotHash: string;
@@ -72,6 +77,7 @@ export function buildRingReceipt(input: {
   dryRun?: boolean;
   txHash?: string | null;
   ringedAt?: string;
+  paidAmountGme?: string | number | null;
 }): RingReceipt {
   const potBalance = formatPotBalance(input.potBalance);
   const snapshot = snapshotToRecord(input.snapshot);
@@ -83,12 +89,14 @@ export function buildRingReceipt(input: {
   });
   const picked = pickWeightedWinner(entrants, seed);
 
+  const paid = coerceAmountGme(input.paidAmountGme);
   return {
     formulaVersion: FORMULA_VERSION,
     windowId: input.windowId,
     announcedWinner: normalizeAddress(input.announcedWinner),
     blockhashAtSnapshot: input.blockhashAtSnapshot.toLowerCase(),
     potBalance,
+    ...(paid !== null ? { paidAmountGme: formatPaidAmount(input.paidAmountGme as string | number) } : {}),
     oddsCapBps: input.oddsCapBps,
     snapshotHash: snapshotHash(snapshot),
     snapshot,
@@ -100,6 +108,39 @@ export function buildRingReceipt(input: {
     ringedAt: input.ringedAt,
     publishedBy: "keeper",
   };
+}
+
+function coerceAmountGme(value: string | number | null | undefined): number | null {
+  if (value === undefined || value === null || value === "") return null;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Keep an explicit string as-is so a settled transfer like 8.8582515 is not padded. */
+function formatPaidAmount(value: string | number): string | number {
+  return typeof value === "number" ? value : value.trim();
+}
+
+/**
+ * GME actually transferred, or null when the receipt has no settled payout.
+ * Seed potBalance is not a payout.
+ */
+export function receiptSettledPaidGme(
+  receipt: Pick<RingReceipt, "paidAmountGme">,
+): number | null {
+  return coerceAmountGme(receipt.paidAmountGme);
+}
+
+/**
+ * GME to show as the payout. Prefers the settled transfer; falls back to the
+ * seed pot only when no paid amount was recorded (dry-run / older receipts).
+ */
+export function receiptPaidAmountGme(
+  receipt: Pick<RingReceipt, "paidAmountGme" | "potBalance">,
+): number | null {
+  const paid = receiptSettledPaidGme(receipt);
+  if (paid !== null) return paid;
+  return coerceAmountGme(receipt.potBalance);
 }
 
 function missing(field: string): string {

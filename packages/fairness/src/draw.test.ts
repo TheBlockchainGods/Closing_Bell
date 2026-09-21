@@ -5,6 +5,8 @@ import {
   buildDrawEntrants,
   drawSeedHex,
   pickWeightedWinner,
+  receiptPaidAmountGme,
+  receiptSettledPaidGme,
   snapshotHash,
   syntheticBlockhash,
   verifyRing,
@@ -39,6 +41,22 @@ describe("fixture receipt", () => {
     };
     const result = verifyRing(tampered);
     expect(result.match).toBe(false);
+  });
+
+  it("keeps MATCH when paidAmountGme differs from the seed pot", () => {
+    const withPayout = {
+      ...FIXTURE_RECEIPT,
+      paidAmountGme: "8.8582515",
+      txHash:
+        "0x08ec83a38d49b8d8e225714920298dcfad9ed8c6e2b3be072c14dad7bdce37c9",
+    };
+    const result = verifyRing(withPayout);
+    expect(result.ok).toBe(true);
+    expect(result.match).toBe(true);
+    expect(result.computedWinner).toBe(FIXTURE_RECEIPT.announcedWinner);
+    expect(receiptSettledPaidGme(withPayout)).toBe(8.8582515);
+    expect(receiptPaidAmountGme(withPayout)).toBe(8.8582515);
+    expect(receiptSettledPaidGme(FIXTURE_RECEIPT)).toBeNull();
   });
 
   it("teaches on missing fields", () => {

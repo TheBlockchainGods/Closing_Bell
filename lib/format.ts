@@ -1,6 +1,6 @@
 const gmeFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
+  maximumFractionDigits: 4,
 });
 
 const gmeWholeFormatter = new Intl.NumberFormat("en-US", {
@@ -49,6 +49,14 @@ const etWeekday = new Intl.DateTimeFormat("en-US", {
 
 export function formatGme(value: number): string {
   return gmeFormatter.format(value);
+}
+
+/** Settled GME payout: keep extra decimals, drop trailing zeros. */
+export function formatGmePaid(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 8,
+  }).format(value);
 }
 
 export function formatGmeWhole(value: number): string {

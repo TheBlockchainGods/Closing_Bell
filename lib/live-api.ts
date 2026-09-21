@@ -20,11 +20,13 @@ export interface LiveOdds {
   odds: number;
   capped: boolean;
   spentInWindowGme: number;
+  spentInWindowUsd: number;
 }
 
 export interface LiveSnapshot {
   fixtureMode: boolean;
   dryRunPayouts: boolean;
+  tokenAddress: string | null;
   pot: LivePot;
   window: LiveWindow;
   ladder: LadderRow[];
@@ -53,6 +55,14 @@ function asString(value: unknown, fallback = ""): string {
 
 function asBool(value: unknown, fallback = false): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function spentGmeFrom(rec: Record<string, unknown>): number {
+  return asNumber(rec.spentGme, asNumber(rec.spentInWindowGme));
+}
+
+function spentUsdFrom(rec: Record<string, unknown>): number {
+  return asNumber(rec.spentUsd, asNumber(rec.spentInWindowUsd));
 }
 
 function asBellKind(value: unknown): BellKind {
@@ -87,7 +97,7 @@ function parseLadder(payload: unknown): LadderRow[] {
         rank: asNumber(rec.rank, index + 1),
         address,
         tickets: asNumber(rec.tickets),
-        spentInWindowGme: asNumber(rec.spentInWindowGme),
+        spentInWindowGme: spentGmeFrom(rec),
         share: asNumber(rec.share),
         odds: asNumber(rec.odds),
         capped: asBool(rec.capped),
@@ -117,6 +127,7 @@ function parseWinners(payload: unknown): WinnerRecord[] {
         ringedAt: asString(rec.ringedAt, new Date().toISOString()),
         simulated: false,
         carriedWeekend: asBool(rec.carriedWeekend, false),
+        txHash: asString(rec.txHash) || null,
       },
     ];
   });
@@ -150,6 +161,7 @@ export async function fetchLiveSnapshot(
   return {
     fixtureMode: asBool(health.fixtureMode, true),
     dryRunPayouts: asBool(health.dryRunPayouts, true),
+    tokenAddress: asString(health.tokenAddress) || null,
     pot: {
       inPotGme: asNumber(pot.inPot),
       accruingGme: asNumber(pot.accruingUnclaimed),
@@ -184,7 +196,8 @@ export async function fetchLiveOdds(
     share: asNumber(rec.share),
     odds: asNumber(rec.odds),
     capped: asBool(rec.capped),
-    spentInWindowGme: asNumber(rec.spentInWindowGme),
+    spentInWindowGme: spentGmeFrom(rec),
+    spentInWindowUsd: spentUsdFrom(rec),
   };
 }
 
@@ -203,6 +216,13 @@ export function mergeLiveLadder(
     const existing = byAddr.get(key);
     if (existing) {
       existing.isYou = true;
+      if (extra && extra.address.toLowerCase() === key) {
+        existing.tickets = extra.tickets;
+        existing.spentInWindowGme = extra.spentInWindowGme;
+        existing.share = extra.share;
+        existing.odds = extra.odds;
+        existing.capped = extra.capped;
+      }
     } else if (extra && extra.address.toLowerCase() === key) {
       byAddr.set(key, {
         rank: 0,

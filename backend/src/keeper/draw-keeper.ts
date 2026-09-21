@@ -170,6 +170,7 @@ export class DrawKeeper {
 
     if (inserted) {
       const book = this.runtime.snapshot ?? this.runtime.live;
+      await this.runtime.refreshPot();
       await this.bot.send(
         formatBagLocked({
           bellLabel: bell.label,
@@ -205,7 +206,7 @@ export class DrawKeeper {
       });
     }
 
-    const pot = this.runtime.pot();
+    const pot = await this.runtime.refreshPot();
     const potGme = pot.displayPot;
     const entrants = buildDrawEntrants(
       this.runtime.snapshot ?? this.runtime.live,
@@ -213,7 +214,7 @@ export class DrawKeeper {
     );
     const totalWeight = totalDrawWeight(entrants);
     const skip = skipRingReason({
-      potGme,
+      potGme: config.dryRunPayouts ? potGme : pot.jackpotWalletBalance,
       minPotGme: config.minPotGme,
       totalWeight,
     });
@@ -266,17 +267,25 @@ export class DrawKeeper {
       return;
     }
 
+    const livePot = config.dryRunPayouts
+      ? pot
+      : await this.runtime.refreshPot();
+    const payableGme = config.dryRunPayouts
+      ? potGme
+      : livePot.jackpotWalletBalance;
     const payout = await resolveJackpotPayout({
       dryRun: config.dryRunPayouts,
       existingTxHash: locked.txHash,
       existingPhase: locked.phase,
       winner: picked.winner.address as `0x${string}`,
-      amountGme: potGme,
+      amountGme: payableGme,
       send: this.sendPayout,
     });
     const txHash = payout.txHash;
     const phase = payout.phase;
     const payoutFailed = phase === "failed";
+    const paidAmountGme = phase === "paid" ? payableGme : null;
+    const recordedAmountGme = paidAmountGme ?? potGme;
 
     if (payoutFailed) {
       console.error(
@@ -304,6 +313,7 @@ export class DrawKeeper {
         blockhashAtSnapshot:
           locked.blockhash ?? syntheticBlockhash(windowId, bell.at),
         potBalance: potGme,
+        paidAmountGme,
         oddsCapBps: config.oddsCapBps,
         snapshot: ticketBookToSnapshot(
           this.runtime.snapshot ?? this.runtime.live,
@@ -323,7 +333,7 @@ export class DrawKeeper {
       id: windowId,
       address: picked.winner.address,
       kind: bell.kind,
-      amountGme: potGme,
+      amountGme: recordedAmountGme,
       ticketsAtRing: picked.winner.tickets,
       oddsAtRing: picked.winner.odds,
       ringedAt: bell.at,
@@ -340,8 +350,8 @@ export class DrawKeeper {
       bellAt: bell.at.toISOString(),
       winner: picked.winner.address,
       odds: picked.winner.odds,
-      amountGme: potGme,
-      amountUsd: pot.displayPotUsd,
+      amountGme: recordedAmountGme,
+      amountUsd: recordedAmountGme * pot.gmeUsdPrice,
       ticketsAtRing: picked.winner.tickets,
       dryRun: phase === "dry_run",
       payoutFailed,
@@ -353,7 +363,7 @@ export class DrawKeeper {
         formatPayoutFailedAlert({
           windowId,
           winner: picked.winner.address,
-          amountGme: potGme,
+          amountGme: recordedAmountGme,
           error: payout.error ?? "unknown error",
         }),
       );

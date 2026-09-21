@@ -19,6 +19,8 @@ export {
 
 export {
   buildRingReceipt,
+  receiptPaidAmountGme,
+  receiptSettledPaidGme,
   verifyRing,
   type RingReceipt,
   type VerifyResult,

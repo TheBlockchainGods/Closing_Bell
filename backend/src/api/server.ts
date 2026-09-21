@@ -1,10 +1,35 @@
 import Fastify from "fastify";
+import {
+  receiptSettledPaidGme,
+  type RingReceipt,
+} from "@closing-bell/fairness";
 
 import { config } from "../config.js";
 import type { BellRuntime } from "../runtime/bell-runtime.js";
 import { getPool } from "../db/client.js";
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
+
+function asReceipt(value: unknown): RingReceipt | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as RingReceipt;
+}
+
+function overlayReceiptPayout(
+  receipt: unknown,
+  paidAmountGme: string | number | null,
+  txHash: string | null,
+): unknown {
+  const base = asReceipt(receipt);
+  if (!base) return receipt;
+  const settled = receiptSettledPaidGme(base);
+  const next: RingReceipt = { ...base };
+  if (settled === null && paidAmountGme !== null && paidAmountGme !== "") {
+    next.paidAmountGme = paidAmountGme;
+  }
+  if (!next.txHash && txHash) next.txHash = txHash;
+  return next;
+}
 
 export function buildServer(runtime: BellRuntime) {
   const app = Fastify({
@@ -46,7 +71,7 @@ export function buildServer(runtime: BellRuntime) {
   });
 
   app.get("/pot", async () => {
-    const pot = runtime.pot();
+    const pot = await runtime.refreshPot();
     return {
       ...pot,
       jackpotWallet: config.jackpotWallet || null,
@@ -57,7 +82,10 @@ export function buildServer(runtime: BellRuntime) {
   app.get("/share/jackpot.png", async (_req, reply) => {
     const { renderJackpotCard } = await import("../telegram/jackpot-card.js");
     const { publicSiteOrigin } = await import("../telegram/links.js");
-    const png = await renderJackpotCard(runtime.pot(), publicSiteOrigin());
+    const png = await renderJackpotCard(
+      await runtime.refreshPot(),
+      publicSiteOrigin(),
+    );
     return reply
       .header("content-type", "image/png")
       .header("cache-control", "no-store")
@@ -65,7 +93,16 @@ export function buildServer(runtime: BellRuntime) {
   });
 
   app.get("/window/current", async () => {
-    return runtime.currentWindow(new Date());
+    const window = runtime.currentWindow(new Date());
+    const hideFixturePool = !config.fixtureMode && !config.tokenAddress;
+    if (!hideFixturePool) return window;
+    return {
+      ...window,
+      ticketsOut: 0,
+      volumeGme: 0,
+      volumeUsd: 0,
+      snapshotTicketsOut: null,
+    };
   });
 
   app.get<{ Querystring: { address?: string } }>("/odds", async (req, reply) => {
@@ -113,14 +150,16 @@ export function buildServer(runtime: BellRuntime) {
       Math.max(1, Number(req.query.limit ?? 20) || 20),
     );
     const window = runtime.currentWindow(new Date());
+    const hideFixturePool = !config.fixtureMode && !config.tokenAddress;
     return {
       phase: window.phase,
-      ticketsOut:
-        window.phase === "locked" && window.snapshotTicketsOut !== null
+      ticketsOut: hideFixturePool
+        ? 0
+        : window.phase === "locked" && window.snapshotTicketsOut !== null
           ? window.snapshotTicketsOut
           : window.ticketsOut,
       oddsCapBps: config.oddsCapBps,
-      rows: runtime.ladder(limit),
+      rows: hideFixturePool ? [] : runtime.ladder(limit),
     };
   });
 
@@ -130,27 +169,37 @@ export function buildServer(runtime: BellRuntime) {
       Math.max(1, Number(req.query.limit ?? 20) || 20),
     );
     const { rows } = await getPool().query(
-      `SELECT id, address, kind, amount_gme, tickets_at_ring, odds_at_ring,
-              ringed_at, carried_weekend, window_id, tx_hash, dry_run
-       FROM winners
-       ORDER BY ringed_at DESC
+      `SELECT w.id, w.address, w.kind, w.amount_gme, w.tickets_at_ring, w.odds_at_ring,
+              w.ringed_at, w.carried_weekend, w.window_id, w.tx_hash, w.dry_run,
+              d.receipt_json, d.tx_hash AS draw_tx_hash
+       FROM winners w
+       LEFT JOIN draws d ON d.window_id = COALESCE(w.window_id, w.id)
+       ORDER BY w.ringed_at DESC
        LIMIT $1`,
       [limit],
     );
     return {
-      rows: rows.map((row) => ({
-        id: row.id,
-        address: row.address,
-        kind: row.kind,
-        amountGme: Number(row.amount_gme),
-        ticketsAtRing: Number(row.tickets_at_ring),
-        oddsAtRing: Number(row.odds_at_ring),
-        ringedAt: new Date(row.ringed_at).toISOString(),
-        carriedWeekend: Boolean(row.carried_weekend),
-        windowId: row.window_id ?? null,
-        txHash: row.tx_hash ?? null,
-        dryRun: row.dry_run !== false,
-      })),
+      rows: rows.map((row) => {
+        const receipt = asReceipt(row.receipt_json);
+        const settled = receipt ? receiptSettledPaidGme(receipt) : null;
+        const txHash =
+          (typeof row.tx_hash === "string" && row.tx_hash) ||
+          (typeof row.draw_tx_hash === "string" && row.draw_tx_hash) ||
+          (receipt?.txHash ?? null);
+        return {
+          id: row.id,
+          address: row.address,
+          kind: row.kind,
+          amountGme: settled ?? Number(row.amount_gme),
+          ticketsAtRing: Number(row.tickets_at_ring),
+          oddsAtRing: Number(row.odds_at_ring),
+          ringedAt: new Date(row.ringed_at).toISOString(),
+          carriedWeekend: Boolean(row.carried_weekend),
+          windowId: row.window_id ?? null,
+          txHash,
+          dryRun: row.dry_run !== false,
+        };
+      }),
     };
   });
 
@@ -206,7 +255,11 @@ export function buildServer(runtime: BellRuntime) {
           windowId: row.window_id,
           phase: row.phase,
           dryRun: row.dry_run !== false,
-          receipt: row.receipt_json,
+          receipt: overlayReceiptPayout(
+            row.receipt_json,
+            null,
+            row.tx_hash ?? null,
+          ),
         };
       }
 
