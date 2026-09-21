@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ContractCopyRow } from "@/components/ContractCopyRow";
 import {
   DocsCallout,
   DocsCode,
@@ -35,6 +36,10 @@ export default function DocsTicketsPage() {
         </Link>
         ).
       </DocsLead>
+
+      <div className="mt-6">
+        <ContractCopyRow />
+      </div>
 
       <DocsH2 id="mint">Mint on buy</DocsH2>
       <DocsP>

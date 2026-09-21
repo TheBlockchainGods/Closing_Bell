@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ContractCopyRow } from "@/components/ContractCopyRow";
 import {
   DocsCallout,
   DocsCode,
@@ -31,6 +32,15 @@ export default function DocsIntroPage() {
         bell rings the public formula picks one wallet for the pot in GME.
         Tickets wipe. The next window starts fresh.
       </DocsLead>
+
+      <DocsH2 id="contract">Contract</DocsH2>
+      <DocsP>
+        Live $BELL on Robinhood Chain. Copy the full address, then trade on PONS
+        or open Defined / DexScreener.
+      </DocsP>
+      <div className="mt-4">
+        <ContractCopyRow />
+      </div>
 
       <DocsCallout title="Who picks the winner">
         <p>
@@ -101,7 +111,8 @@ export default function DocsIntroPage() {
 
       <DocsH2 id="live-vs-next">What&apos;s live vs what&apos;s next</DocsH2>
       <DocsP>
-        Live at launch: Core Bell Pot (Open / Lunch / Close), this site,{" "}
+        Live: Core Bell Pot (Open / Lunch / Close), live CA and charts, this
+        site,{" "}
         <Link href="/verify" className="text-brass-200 hover:text-tape">
           /verify
         </Link>
@@ -113,9 +124,7 @@ export default function DocsIntroPage() {
         are not roadmap items.
       </DocsP>
       <DocsP>
-        What&apos;s next only: After Hours (Friday Close stake, weekly GME pot)
-        and on-chain proof (live CA, chart, settlement receipts when the
-        contract is live). No fake CA or chart links before that.
+        What&apos;s next only: After Hours (Friday Close stake, weekly GME pot).
       </DocsP>
 
       <DocsPager next={{ href: "/docs/tickets", label: "How tickets work" }} />

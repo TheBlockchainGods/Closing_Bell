@@ -61,6 +61,8 @@ Repo already on GitHub: [TheBlockchainGods/Closing_Bell](https://github.com/TheB
 | Name | Value |
 | --- | --- |
 | `NEXT_PUBLIC_API_BASE` | `https://closing-bell-api.qdwgj1kmyrm0a.us-west-2.cs.amazonlightsail.com` |
+| `NEXT_PUBLIC_TOKEN_ADDRESS` | `0x72C185D3BdDFDCEa818079482350C36bF48Fb1C7` |
+| `NEXT_PUBLIC_CHART_URL` | `https://www.defined.fi/token/robinhood/0x72C185D3BdDFDCEa818079482350C36bF48Fb1C7` |
 | `NODE_VERSION` | `22` |
 
 8. Save and deploy.

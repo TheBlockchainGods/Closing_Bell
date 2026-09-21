@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ContractCopyRow } from "@/components/ContractCopyRow";
 import {
   DocsCallout,
   DocsCode,
@@ -56,10 +57,14 @@ export default function DocsArchitecturePage() {
           <DocsCode>docs/AWS_HOSTING.md</DocsCode>.
         </li>
         <li>
-          Launch knobs: <DocsCode>NEXT_PUBLIC_TOKEN_ADDRESS</DocsCode>,{" "}
-          <DocsCode>NEXT_PUBLIC_CHART_URL</DocsCode>.
+          Live $BELL contract and charts: homepage CONTRACT row, PONS launchpad,
+          Defined, DexScreener. Same address as Lightsail{" "}
+          <DocsCode>TOKEN_ADDRESS</DocsCode>.
         </li>
       </DocsUl>
+      <div className="mt-4">
+        <ContractCopyRow />
+      </div>
 
       <DocsH2 id="backend">Backend</DocsH2>
       <DocsUl>
@@ -166,14 +171,14 @@ export default function DocsArchitecturePage() {
           ],
           [
             "Cloud (Lightsail)",
-            "Same container image on Lightsail with managed Postgres. Public /health and live on-chain /pot. Indexer idles until TOKEN_ADDRESS is set.",
+            "Same container image on Lightsail with managed Postgres. Public /health and live on-chain /pot. Indexer reads the live TOKEN_ADDRESS from START_BLOCK.",
             <>
               <DocsCode>FIXTURE_MODE=false</DocsCode>
             </>,
           ],
           [
             "PONS create (one-motion)",
-            "Pre-stage CREATE2 token and curve, then launch and first-block buys together. Backfill from START_BLOCK if the process starts late. Amplify CA/chart can lag.",
+            "Token is live. Indexer backfills from START_BLOCK so first-block buys including launchAndBuy mint tickets.",
             <>
               <DocsCode>FIXTURE_MODE=false</DocsCode>, set{" "}
               <DocsCode>TOKEN_ADDRESS</DocsCode>,{" "}

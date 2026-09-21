@@ -1,4 +1,5 @@
 import { formatGme, formatUsd } from "@/lib/format";
+import { LIVE_TOKEN_ADDRESS } from "@/lib/launch";
 
 export const JACKPOT_SHARE_LINK = "https://closingbellonrh.com/#bell-pot";
 export const JACKPOT_SITE_URL = "https://closingbellonrh.com";
@@ -11,6 +12,7 @@ export const SHARE_CAPTION_MAX = 220;
 const LINE1 = "$BELL buy-to-win on @RobinhoodApp Chain \u{1F514}";
 const LINE3 = "3 jackpots/day \u00B7 24/7 \u00B7 7 days a week";
 const LINE4 = JACKPOT_SITE_URL;
+const LINE5 = LIVE_TOKEN_ADDRESS;
 
 function gmeFormats(gme: number): string[] {
   const out: string[] = [formatGme(gme)];
@@ -32,12 +34,12 @@ function gmeFormats(gme: number): string[] {
 }
 
 function buildCaption(gmeLabel: string, usdLabel: string): string {
-  // TODO: after launch, append contract address on a new line after LINE4 (do not invent a CA).
   return [
     LINE1,
     `Jackpot: ${gmeLabel} GME (~${usdLabel})`,
     LINE3,
     LINE4,
+    LINE5,
   ].join("\n");
 }
 

@@ -13,7 +13,7 @@ import { LaunchBar } from "@/components/LaunchBar";
 import { TrustStrip } from "@/components/TrustStrip";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { useBell } from "@/lib/bell-store";
-import { PONS_URL } from "@/lib/mock-data";
+import { PONS_LAUNCH_URL } from "@/lib/launch";
 import { EASE_BELL } from "@/lib/motion";
 import { useNow } from "@/lib/use-clock";
 
@@ -92,7 +92,7 @@ export function Hero() {
                 Check odds
               </ButtonLink>
               <ButtonLink
-                href={PONS_URL}
+                href={PONS_LAUNCH_URL}
                 variant="secondary"
                 size="lg"
                 target="_blank"

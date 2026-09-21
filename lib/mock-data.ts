@@ -9,6 +9,7 @@ import type {
   WalletSnapshot,
   WinnerRecord,
 } from "./types";
+import { PONS_LAUNCH_URL } from "./launch";
 
 /**
  * Copy, protocol constants, and After Hours targets.
@@ -18,8 +19,7 @@ import type {
  * (fixture responses are fine until launch).
  */
 
-/** Placeholder until the real PONS trade link exists. */
-export const PONS_URL = "https://pons.exchange";
+export const PONS_URL = PONS_LAUNCH_URL;
 
 export const POT: PotSnapshot = {
   inPotGme: 0,

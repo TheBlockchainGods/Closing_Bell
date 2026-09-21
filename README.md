@@ -12,7 +12,7 @@ The marketing site reads pot, ladder, odds, and winners from the public API when
 
 ## What changed in the launch chrome pass
 
-- **Launch bar** under the trust tape: truncated CA + Copy, Chart, Docs, Verify. Mirrored in the footer. Empty `NEXT_PUBLIC_TOKEN_ADDRESS` / `NEXT_PUBLIC_CHART_URL` show "CA at launch" and keep Chart/Copy disabled (see `.env.example`).
+- **Launch bar** under the trust tape: full live CA + Copy, PONS, Defined, DexScreener, Docs, Verify. Mirrored in the footer.
 - **Docs** at `/docs`: product documentation (tickets, odds, fees, draw, verify, payouts, architecture, ops, FAQ) with sidebar nav.
 - **Verify** at `/verify`: one-tap ring check (latest or example); Advanced still has full receipt paste (`packages/fairness`).
 - **Roadmap:** brass cards with a Next badge (After Hours first), bullish blurbs, no neon empty grid.
@@ -61,8 +61,8 @@ Then open [http://localhost:3000](http://localhost:3000).
 Optional launch env (root `.env.local`, see `.env.example`):
 
 ```bash
-NEXT_PUBLIC_TOKEN_ADDRESS=0x…
-NEXT_PUBLIC_CHART_URL=https://dexscreener.com/…
+NEXT_PUBLIC_TOKEN_ADDRESS=0x72C185D3BdDFDCEa818079482350C36bF48Fb1C7
+NEXT_PUBLIC_CHART_URL=https://www.defined.fi/token/robinhood/0x72C185D3BdDFDCEa818079482350C36bF48Fb1C7
 NEXT_PUBLIC_API_BASE=https://closing-bell-api.qdwgj1kmyrm0a.us-west-2.cs.amazonlightsail.com
 # Local API instead: NEXT_PUBLIC_API_BASE=http://localhost:8787
 ```
@@ -100,6 +100,8 @@ Amplify env (must be set before the first build so they bake into the client):
 
 ```
 NEXT_PUBLIC_API_BASE=https://closing-bell-api.qdwgj1kmyrm0a.us-west-2.cs.amazonlightsail.com
+NEXT_PUBLIC_TOKEN_ADDRESS=0x72C185D3BdDFDCEa818079482350C36bF48Fb1C7
+NEXT_PUBLIC_CHART_URL=https://www.defined.fi/token/robinhood/0x72C185D3BdDFDCEa818079482350C36bF48Fb1C7
 ```
 
 `amplify.yml` at the repo root runs `npm ci` then `npm run build` on Node 22.

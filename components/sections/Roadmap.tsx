@@ -20,6 +20,13 @@ const LIVE: Item[] = [
     status: "live",
   },
   {
+    id: "contract",
+    title: "Contract and charts",
+    blurb:
+      "Live $BELL CA with copy, PONS launchpad, Defined, and DexScreener. Same address as the indexer.",
+    status: "live",
+  },
+  {
     id: "telegram-bot",
     title: "Telegram + Bellwether bot",
     blurb:
@@ -49,13 +56,6 @@ const NEXT: Item[] = [
     blurb:
       "Stake $BELL through the Friday Close snapshot and take a cut of a weekly pot paid in GME.",
     status: "next",
-  },
-  {
-    id: "proof",
-    title: "On-chain proof",
-    blurb:
-      "Live CA, chart, and settlement receipts on the surface when the contract is live. No fake links before that.",
-    status: "queued",
   },
 ];
 
@@ -136,7 +136,7 @@ export function Roadmap() {
           <span className="brass-text">next</span>
         </>
       }
-      lead="Core Bell Pot, site, verify, Telegram, alerts, and router tape shipped at launch. After Hours and on-chain proof are the real roadmap."
+      lead="Core Bell Pot, live CA, charts, site, verify, Telegram, alerts, and router tape are live. After Hours is next."
     >
       <div className="space-y-10">
         <div>

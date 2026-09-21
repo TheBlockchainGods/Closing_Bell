@@ -17,7 +17,8 @@ import {
   formatCountdownClock,
   remainingUntil,
 } from "@/lib/market-clock";
-import { PONS_URL, isAddressLike } from "@/lib/mock-data";
+import { PONS_LAUNCH_URL } from "@/lib/launch";
+import { isAddressLike } from "@/lib/mock-data";
 import { EASE_BELL } from "@/lib/motion";
 import { useBellClock, useNow } from "@/lib/use-clock";
 import { motion, useReducedMotion } from "framer-motion";
@@ -215,7 +216,7 @@ function AdvancedSwap() {
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <ButtonLink
-            href={PONS_URL}
+            href={PONS_LAUNCH_URL}
             variant="secondary"
             rel="noreferrer noopener"
             target="_blank"

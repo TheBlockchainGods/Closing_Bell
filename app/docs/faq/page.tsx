@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ContractCopyRow } from "@/components/ContractCopyRow";
 import {
   DocsCode,
   DocsH1,
@@ -141,11 +142,17 @@ export default function DocsFaqPage() {
       <DocsH2 id="live-vs-next">Is After Hours live?</DocsH2>
       <DocsP>
         No. After Hours is what&apos;s next: stake through Friday Close for a
-        weekly GME pot. Core Bell Pot, verify, docs, Telegram, alerts, and
-        router tape are already live at launch. On-chain proof (CA, chart,
-        settlement receipts) waits for the live contract. No fake links before
-        that.
+        weekly GME pot. Core Bell Pot, live CA and charts, verify, docs,
+        Telegram, alerts, and router tape are already live. Copy the contract
+        below, or see{" "}
+        <Link href="/docs#contract" className="text-brass-200 hover:text-tape">
+          Contract
+        </Link>{" "}
+        on the intro page.
       </DocsP>
+      <div className="mt-4">
+        <ContractCopyRow />
+      </div>
 
       <DocsPager
         prev={{
