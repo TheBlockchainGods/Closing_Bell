@@ -32,3 +32,10 @@ export {
   FIXTURE_SNAPSHOT,
   createFixtureReceipt,
 } from "./fixture.js";
+
+export {
+  SHARE_CAPTION_MAX,
+  formatJackpotShareCaption,
+  formatShareDigits,
+  type JackpotShareCaptionInput,
+} from "./share-caption.js";

@@ -310,6 +310,8 @@ export function BellPot() {
         displayPotUsd={potUsd}
         inPotGme={bell.inPotGme}
         accruingGme={bell.accruingGme}
+        totalPaidOutGme={bell.totalPaidOutGme}
+        totalPaidOutUsd={bell.totalPaidOutGme * bell.gmePriceUsd}
       />
     </Section>
   );

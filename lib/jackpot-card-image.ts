@@ -12,7 +12,13 @@ export type JackpotCardAmounts = {
   displayPotUsd: number;
   inPotGme: number;
   accruingGme: number;
+  totalPaidOutGme: number;
+  totalPaidOutUsd: number;
 };
+
+export function formatPaidOutCardLine(gme: number, usd: number): string {
+  return `Paid out ${formatGme(gme)} GME (~${formatUsdPrecise(usd)})`;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -167,6 +173,11 @@ export async function renderJackpotSharePng(
   ctx.font = `400 16px ${display}`;
   ctx.fillText(`In pot ${formatGme(amounts.inPotGme)} GME`, cx, 488);
   ctx.fillText(`Accruing ${formatGme(amounts.accruingGme)} GME`, cx, 516);
+  ctx.fillText(
+    formatPaidOutCardLine(amounts.totalPaidOutGme, amounts.totalPaidOutUsd),
+    cx,
+    548,
+  );
 
   ctx.font = `400 18px ${display}`;
   ctx.fillText(JACKPOT_SITE_HOST, cx, 628);

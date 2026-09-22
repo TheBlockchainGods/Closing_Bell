@@ -27,6 +27,8 @@ type ShareJackpotModalProps = {
   displayPotUsd: number;
   inPotGme: number;
   accruingGme: number;
+  totalPaidOutGme: number;
+  totalPaidOutUsd: number;
 };
 
 type PreviewState =
@@ -43,6 +45,8 @@ export function ShareJackpotModal({
   displayPotUsd,
   inPotGme,
   accruingGme,
+  totalPaidOutGme,
+  totalPaidOutUsd,
 }: ShareJackpotModalProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -61,9 +65,16 @@ export function ShareJackpotModal({
     displayPotUsd,
     inPotGme,
     accruingGme,
+    totalPaidOutGme,
+    totalPaidOutUsd,
   };
 
-  const shareText = formatJackpotShareText(displayPotGme, displayPotUsd);
+  const shareText = formatJackpotShareText({
+    jackpotGme: displayPotGme,
+    jackpotUsd: displayPotUsd,
+    paidOutGme: totalPaidOutGme,
+    paidOutUsd: totalPaidOutUsd,
+  });
   const xHref = twitterShareHref(shareText);
   const tgHref = telegramShareHref(JACKPOT_SHARE_LINK, shareText);
 
@@ -104,7 +115,7 @@ export function ShareJackpotModal({
     };
     // Parent remounts modal per open session; pot fields refresh the card.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, displayPotGme, displayPotUsd, inPotGme, accruingGme]);
+  }, [open, displayPotGme, displayPotUsd, inPotGme, accruingGme, totalPaidOutGme, totalPaidOutUsd]);
 
   async function copyLink() {
     try {

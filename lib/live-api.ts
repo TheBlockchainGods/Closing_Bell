@@ -175,7 +175,10 @@ export async function fetchLiveSnapshot(
     },
     ladder,
     winners,
-    totalPaidOutGme: winners.reduce((sum, row) => sum + row.amountGme, 0),
+    totalPaidOutGme:
+      pot.totalPaidOutGme !== undefined
+        ? asNumber(pot.totalPaidOutGme)
+        : winners.reduce((sum, row) => sum + row.amountGme, 0),
     sampleLookups: ladder.slice(0, 3).map((row) => row.address),
   };
 }
