@@ -207,9 +207,11 @@ export class DrawKeeper {
     }
 
     const pot = await this.runtime.refreshPot();
+    const eligibleBook = await this.runtime.eligibleTicketBook();
     const potGme = pot.displayPot;
+    const drawBook = eligibleBook;
     const entrants = buildDrawEntrants(
-      this.runtime.snapshot ?? this.runtime.live,
+      drawBook,
       config.oddsCapBps,
     );
     const totalWeight = totalDrawWeight(entrants);
@@ -267,6 +269,25 @@ export class DrawKeeper {
       return;
     }
 
+    if (this.runtime.eoaGate) {
+      try {
+        await this.runtime.eoaGate.assertEoaWinner(picked.winner.address);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`Jackpot skip: ${message}`);
+        await this.store.markSkipped(windowId, "contract winner", potGme);
+        this.runtime.wipeAndSettle(bell.at);
+        await this.bot.send(
+          formatSkip({
+            bellLabel: bell.label,
+            reason: "no winner from weighted walk",
+            potGme,
+          }),
+        );
+        return;
+      }
+    }
+
     const livePot = config.dryRunPayouts
       ? pot
       : await this.runtime.refreshPot();
@@ -279,7 +300,12 @@ export class DrawKeeper {
       existingPhase: locked.phase,
       winner: picked.winner.address as `0x${string}`,
       amountGme: payableGme,
-      send: this.sendPayout,
+      send: async (input) => {
+        if (this.runtime.eoaGate) {
+          await this.runtime.eoaGate.assertEoaWinner(input.winner);
+        }
+        return this.sendPayout(input);
+      },
     });
     const txHash = payout.txHash;
     const phase = payout.phase;
@@ -315,9 +341,7 @@ export class DrawKeeper {
         potBalance: potGme,
         paidAmountGme,
         oddsCapBps: config.oddsCapBps,
-        snapshot: ticketBookToSnapshot(
-          this.runtime.snapshot ?? this.runtime.live,
-        ),
+        snapshot: ticketBookToSnapshot(drawBook),
         dryRun: phase === "dry_run",
         txHash,
         ringedAt: bell.at.toISOString(),

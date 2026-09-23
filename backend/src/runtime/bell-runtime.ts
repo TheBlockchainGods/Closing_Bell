@@ -7,6 +7,7 @@ import {
   type Remaining,
 } from "../clock/market-clock.js";
 import { computePotDisplay, type PotBreakdown } from "../pot/display.js";
+import type { PotFeed } from "../pot/chain.js";
 import {
   applyBuy,
   applySell,
@@ -21,6 +22,7 @@ import {
   type TicketBook,
 } from "../tickets/engine.js";
 import type { ChainTradeEvent } from "../indexer/types.js";
+import type { EoaGate } from "../chain/eoa-gate.js";
 
 export type WindowPhase = "open" | "locked" | "settled";
 
@@ -72,20 +74,36 @@ export class BellRuntime {
   lockedBlockhash: string | null = null;
   winners: WinnerRecord[] = [];
   private settledUntil: Date | null = null;
+  private potFeed: PotFeed | null = null;
+  eoaGate: EoaGate | null = null;
 
   constructor(private readonly cfg: AppConfig) {}
+
+  attachPotFeed(feed: PotFeed): void {
+    this.potFeed = feed;
+  }
+
+  attachEoaGate(gate: EoaGate): void {
+    this.eoaGate = gate;
+  }
 
   gmeUsdPrice(): number {
     return this.cfg.gmeUsdPrice;
   }
 
   pot(): PotBreakdown {
+    if (this.potFeed) return this.potFeed.snapshot();
     return computePotDisplay({
       jackpotWalletBalance: this.cfg.jackpotWalletBalanceGme,
       ponsClaimable: this.cfg.ponsClaimableGme,
       jackpotShareBps: this.cfg.jackpotShareBps,
       gmeUsdPrice: this.cfg.gmeUsdPrice,
     });
+  }
+
+  async refreshPot(): Promise<PotBreakdown> {
+    if (this.potFeed) return this.potFeed.refresh();
+    return this.pot();
   }
 
   /**
@@ -149,6 +167,10 @@ export class BellRuntime {
       this.windowOpenedAt = event.occurredAt;
     }
 
+    if (this.eoaGate?.isIneligibleCached(event.wallet)) {
+      return { applied: false, note: "skip contract recipient" };
+    }
+
     if (event.kind === "buy") {
       const { minted, usd } = applyBuy(
         this.live,
@@ -185,6 +207,7 @@ export class BellRuntime {
       : null;
     const bookForCounts =
       this.phase === "locked" && this.snapshot ? this.snapshot : this.live;
+    const visible = this.eoaVisibleBook(bookForCounts);
 
     return {
       phase: this.phase,
@@ -207,9 +230,9 @@ export class BellRuntime {
         this.phase === "locked" ? (snapAt?.toISOString() ?? null) : null,
       volumeUsd: round(this.volumeUsd, 6),
       volumeGme: round(this.volumeGme, 6),
-      ticketsOut: totalTickets(this.live),
+      ticketsOut: totalTickets(this.eoaVisibleBook(this.live)),
       snapshotTicketsOut:
-        this.phase === "locked" ? totalTickets(bookForCounts) : null,
+        this.phase === "locked" ? totalTickets(visible) : null,
       lockedWindowId: this.lockedWindowId,
     };
   }
@@ -228,10 +251,23 @@ export class BellRuntime {
     this.tick(now);
     const book =
       this.phase === "locked" && this.snapshot ? this.snapshot : this.live;
-    const wallet = getWallet(book, address);
+    const visible = this.eoaVisibleBook(book);
+    if (this.eoaGate?.isIneligibleCached(address)) {
+      const zero = computeOdds(0, totalTickets(visible), this.cfg.oddsCapBps);
+      return {
+        address: address.toLowerCase(),
+        ...zero,
+        bellBalance: 0,
+        spentGme: 0,
+        spentUsd: 0,
+        spentInWindowGme: 0,
+        spentInWindowUsd: 0,
+      };
+    }
+    const wallet = getWallet(visible, address);
     const result = computeOdds(
       wallet.tickets,
-      totalTickets(book),
+      totalTickets(visible),
       this.cfg.oddsCapBps,
     );
     return {
@@ -245,11 +281,36 @@ export class BellRuntime {
     };
   }
 
+  async eligibleTicketBook(now = new Date()): Promise<TicketBook> {
+    this.tick(now);
+    const book =
+      this.phase === "locked" && this.snapshot ? this.snapshot : this.live;
+    if (!this.eoaGate) return this.eoaVisibleBook(book);
+    return this.eoaGate.eoaTicketBook(book);
+  }
+
+  private eoaVisibleBook(book: TicketBook): TicketBook {
+    if (!this.eoaGate) return book;
+    const next: TicketBook = new Map();
+    for (const [address, row] of book.entries()) {
+      if (this.eoaGate.isIneligibleCached(address)) continue;
+      next.set(address, row);
+    }
+    return next;
+  }
+
   ladder(limit = 20, now = new Date()): LadderRow[] {
     this.tick(now);
     const book =
       this.phase === "locked" && this.snapshot ? this.snapshot : this.live;
-    return buildLadder(book, this.cfg.oddsCapBps, limit);
+    const exclude = this.eoaGate
+      ? new Set(
+          [...book.keys()]
+            .filter((addr) => this.eoaGate!.isIneligibleCached(addr))
+            .map((addr) => addr.toLowerCase()),
+        )
+      : new Set<string>();
+    return buildLadder(book, this.cfg.oddsCapBps, limit, exclude);
   }
 }
 

@@ -59,6 +59,30 @@ interface TelegramApiResult {
   result?: unknown;
 }
 
+/**
+ * Telegram message bodies must be a single UTF-8 HTML string.
+ * Rejects arrays, file objects, and PowerShell/JSON dumps that previously
+ * spammed the live channel (PSPath, \\u003c-escaped tags, JSON arrays).
+ */
+export function assertTelegramMessageText(text: unknown): string {
+  if (typeof text !== "string") {
+    throw new Error(
+      `Telegram text must be a plain string, got ${Array.isArray(text) ? "array" : typeof text}`,
+    );
+  }
+  if (text.includes("PSPath") || text.includes("VersionInfo")) {
+    throw new Error("Telegram text looks like a PowerShell file dump; refusing to send");
+  }
+  if (text.includes("\\u003c") || text.includes("\\u003e")) {
+    throw new Error("Telegram text looks Unicode-escaped HTML; refusing to send");
+  }
+  const trimmed = text.trimStart();
+  if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+    throw new Error("Telegram text looks like a JSON dump; refusing to send");
+  }
+  return text;
+}
+
 async function telegramCall(
   botToken: string,
   method: string,
@@ -69,7 +93,9 @@ async function telegramCall(
   if (body instanceof FormData) {
     init.body = body;
   } else {
-    init.headers = { "content-type": "application/json" };
+    init.headers = {
+      "content-type": "application/json; charset=utf-8",
+    };
     init.body = JSON.stringify(body);
   }
   const res = await fetch(url, init);
@@ -87,9 +113,10 @@ function messagePayload(
   text: string,
   options?: SendOptions,
 ): Record<string, unknown> {
+  const safe = assertTelegramMessageText(text);
   const payload: Record<string, unknown> = {
     chat_id: target,
-    text,
+    text: safe,
     parse_mode: options?.parseMode ?? "HTML",
     disable_web_page_preview: options?.disablePreview ?? true,
   };
@@ -108,15 +135,16 @@ export function createTelegramSender(opts: {
   return {
     enabled,
     async send(text, chatId, options) {
+      const safe = assertTelegramMessageText(text);
       const target = chatId || opts.chatId;
       if (!opts.botToken || !target) {
-        log(`[tg:dry]\n${text}`);
+        log(`[tg:dry]\n${safe}`);
         return null;
       }
       const json = await telegramCall(
         opts.botToken,
         "sendMessage",
-        messagePayload(target, text, options),
+        messagePayload(target, safe, options),
       );
       const result = json.result as { message_id?: number } | undefined;
       return { messageId: result?.message_id ?? 0 };
@@ -189,12 +217,13 @@ export function createTelegramSender(opts: {
       await telegramCall(opts.botToken, "unpinChatMessage", body);
     },
     async edit(messageId, text, chatId, options) {
+      const safe = assertTelegramMessageText(text);
       const target = chatId || opts.chatId;
       if (!opts.botToken || !target) return;
       await telegramCall(opts.botToken, "editMessageText", {
         chat_id: target,
         message_id: messageId,
-        ...messagePayload(target, text, options),
+        ...messagePayload(target, safe, options),
       });
     },
     async getPinned(chatId) {

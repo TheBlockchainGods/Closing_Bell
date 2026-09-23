@@ -7,6 +7,9 @@ export const PONS_V2_HOOK =
   "0xE5e702641Ea86F4ae6cC3cDaeD2B886f976Be044" as const;
 export const UNISWAP_V4_POOL_MANAGER =
   "0x8366a39cc670b4001a1121b8f6a443a643e40951" as const;
+/** PONS v2 FeeEscrow on Robinhood Chain (docs.ponsfamily.com/v2). Fallback if factory.feeEscrow() fails. */
+export const PONS_V2_FEE_ESCROW =
+  "0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e" as const;
 export const ZERO_ADDRESS =
   "0x0000000000000000000000000000000000000000" as const;
 

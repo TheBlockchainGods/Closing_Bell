@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   BELL_SCHEDULE,
   etWallClockToInstant,
+  formatBellClockLine,
   nextBell,
   snapshotAtForBell,
   upcomingBells,
@@ -16,6 +17,9 @@ describe("market clock", () => {
         ["lunch", 12, 30],
         ["close", 16, 0],
       ],
+    );
+    expect(formatBellClockLine()).toBe(
+      "Open 9:30 AM ET · Lunch 12:30 PM ET · Close 4:00 PM ET",
     );
   });
 

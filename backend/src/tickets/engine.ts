@@ -180,10 +180,15 @@ export function buildLadder(
   book: TicketBook,
   oddsCapBps: number,
   limit = 20,
+  exclude: ReadonlySet<string> = new Set(),
 ): LadderRow[] {
-  const ticketsOut = totalTickets(book);
-  const rows = [...book.entries()]
-    .filter(([, row]) => row.tickets > 0)
+  const eligible = new Map(
+    [...book.entries()].filter(
+      ([address, row]) => row.tickets > 0 && !exclude.has(address.toLowerCase()),
+    ),
+  );
+  const ticketsOut = totalTickets(eligible);
+  const rows = [...eligible.entries()]
     .map(([address, row]) => {
       const odds = computeOdds(row.tickets, ticketsOut, oddsCapBps);
       return {

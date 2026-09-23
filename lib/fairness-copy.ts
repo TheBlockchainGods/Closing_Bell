@@ -9,7 +9,7 @@ export const WHO_PICKS_ONE_LINER =
 
 /** Optional second breath where space allows. */
 export const WHO_PICKS_SAME_MATH =
-  "Same list + same formula → same wallet.";
+  "Same list + same formula -> same wallet.";
 
 /** Short beat for strips and captions. */
 export const FORMULA_PICKS_BEAT =

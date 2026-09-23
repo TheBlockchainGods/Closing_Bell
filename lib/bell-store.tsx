@@ -60,6 +60,7 @@ interface BellContextValue extends MutableState {
   sampleLookups: string[];
   liveApi: boolean;
   fixtureMode: boolean;
+  tokenAddress: string | null;
   feedStatus: FeedStatus;
   oddsLookupError: string | null;
   ring: () => void;
@@ -124,6 +125,7 @@ export function BellProvider({ children }: { children: ReactNode }) {
   const [liveOdds, setLiveOdds] = useState<LiveOdds | null>(null);
   const [liveApi, setLiveApi] = useState(false);
   const [fixtureMode, setFixtureMode] = useState(true);
+  const [tokenAddress, setTokenAddress] = useState<string | null>(null);
   const [feedStatus, setFeedStatus] = useState<FeedStatus>("loading");
   const [oddsLookupError, setOddsLookupError] = useState<string | null>(null);
   const timers = useRef<number[]>([]);
@@ -162,6 +164,7 @@ export function BellProvider({ children }: { children: ReactNode }) {
       setLiveApi(true);
       setFeedStatus("live");
       setFixtureMode(snap.fixtureMode);
+      setTokenAddress(snap.tokenAddress);
       setState(applySnapshot(snap));
       setWinners(snap.winners);
       setLiveLadder(snap.ladder);
@@ -313,6 +316,7 @@ export function BellProvider({ children }: { children: ReactNode }) {
       sampleLookups,
       liveApi,
       fixtureMode,
+      tokenAddress,
       feedStatus,
       oddsLookupError,
       ring,
@@ -337,6 +341,7 @@ export function BellProvider({ children }: { children: ReactNode }) {
       sampleLookups,
       liveApi,
       fixtureMode,
+      tokenAddress,
       feedStatus,
       oddsLookupError,
       ring,

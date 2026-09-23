@@ -12,7 +12,6 @@ import {
 import {
   formatBotLive,
   formatBuyAnnounce,
-  formatFairnessPin,
   formatHowCommand,
   formatJackpotCommand,
   formatLadderRedirect,
@@ -25,18 +24,18 @@ import {
   formatVerifyCommand,
   formatFairnessCommand,
   formatWinCelebration,
-  isFairnessPinText,
-  isWinCelebrationText,
-  stripTelegramHtml,
+  TELEGRAM_SLASH_COMMANDS,
 } from "./format.js";
 import { pinLatestWin, postWinCelebration } from "./celebration.js";
+import { getPool } from "../db/client.js";
+import { attachPaidOut, sumPaidOutGme } from "../pot/paid-out.js";
 import { renderJackpotCard } from "./jackpot-card.js";
 import {
   jackpotShareUrl,
   publicLinks,
   publicSiteOrigin,
 } from "./links.js";
-import { mintTickets, usdSpent } from "../tickets/engine.js";
+import { mintTickets, totalTickets, usdSpent } from "../tickets/engine.js";
 import type { ChainTradeEvent } from "../indexer/types.js";
 import { nextBell, remainingUntil } from "../clock/market-clock.js";
 
@@ -47,19 +46,6 @@ const HOW_IMAGE_CANDIDATES = [
   resolve(here, "../../assets/how-the-bell-works.png"),
   resolve(here, "../../../public/brand/how-the-bell-works.jpg"),
   resolve(here, "../../../public/brand/how-the-bell-works.png"),
-];
-
-const BOT_COMMANDS = [
-  { command: "pot", description: "Live jackpot in GME and USD" },
-  { command: "jackpot", description: "Jackpot pool and next ring" },
-  { command: "standings", description: "Jackpot pool (same as /jackpot)" },
-  { command: "odds", description: "Odds for a wallet: /odds 0x..." },
-  { command: "next", description: "Next jackpot ring" },
-  { command: "how", description: "How the bell works" },
-  { command: "verify", description: "Check a published ring" },
-  { command: "fairness", description: "How the winner is picked (same as /random)" },
-  { command: "random", description: "How the winner is picked (same as /fairness)" },
-  { command: "draw", description: "How the winner is picked (same as /fairness)" },
 ];
 
 function howImagePath(): string | null {
@@ -88,28 +74,26 @@ export class TelegramBot {
     }
     console.log("Telegram bot: polling for commands.");
     try {
-      await this.sender.setMyCommands(BOT_COMMANDS);
+      await this.sender.setMyCommands(TELEGRAM_SLASH_COMMANDS);
     } catch (err) {
       console.error("Telegram setMyCommands failed:", err);
     }
-    try {
-      await this.ensureFairnessPin();
-    } catch (err) {
-      console.error(
-        "Telegram pin failed (bot needs admin + pin permission):",
-        err,
+    if (config.telegramStartupAnnounce) {
+      try {
+        await this.sender.send(
+          formatBotLive({
+            fixtureMode: config.fixtureMode,
+            dryRun: config.dryRunPayouts,
+          }),
+        );
+        console.log("Telegram bot: startup announce sent.");
+      } catch (err) {
+        console.error("Telegram startup announce failed:", err);
+      }
+    } else {
+      console.log(
+        "Telegram bot: startup announce off. /how on demand only. No boot pin.",
       );
-    }
-    try {
-      await this.sender.send(
-        formatBotLive({
-          fixtureMode: config.fixtureMode,
-          dryRun: config.dryRunPayouts,
-        }),
-      );
-      console.log("Telegram bot: live check sent to configured chat.");
-    } catch (err) {
-      console.error("Telegram live check failed:", err);
     }
     void this.pollLoop();
   }
@@ -120,6 +104,7 @@ export class TelegramBot {
   }
 
   async announceBuy(event: ChainTradeEvent): Promise<void> {
+    if (!config.telegramAnnounceBuys) return;
     if (event.kind !== "buy") return;
     const usd = usdSpent(event.gmeAmount, config.gmeUsdPrice);
     const minted = mintTickets(usd, config);
@@ -131,6 +116,7 @@ export class TelegramBot {
       pool.find((r) => r.address === event.wallet.toLowerCase())?.rank ??
       null;
     const upcoming = nextBell(new Date(), config.bells24_7);
+    await this.runtime.refreshPot();
     const text = formatBuyAnnounce({
       wallet: event.wallet,
       gmeSpent: event.gmeAmount,
@@ -174,6 +160,7 @@ export class TelegramBot {
       payoutFailed: input.payoutFailed,
       txHash: input.txHash,
       verifyUrl: links.verifyUrl ?? `${publicSiteOrigin()}/verify`,
+      bells24_7: config.bells24_7,
     });
     const posted = await postWinCelebration(this.sender, caption);
     if (posted?.messageId) {
@@ -204,43 +191,6 @@ export class TelegramBot {
     );
   }
 
-  private async ensureFairnessPin(): Promise<void> {
-    if (!config.telegramChatId) return;
-    const desired = formatFairnessPin(
-      publicLinks(),
-      config.snapshotLeadSeconds,
-    );
-    const existing = await this.sender.getPinned();
-    if (existing && isWinCelebrationText(existing.text)) {
-      console.log("Telegram bot: leaving latest win pin in place.");
-      return;
-    }
-    const desiredPlain = stripTelegramHtml(desired);
-    if (existing && stripTelegramHtml(existing.text) === desiredPlain) {
-      console.log("Telegram bot: fairness pin already current.");
-      return;
-    }
-    if (existing && isFairnessPinText(existing.text)) {
-      try {
-        await this.sender.edit(existing.messageId, desired);
-        console.log("Telegram bot: fairness pin updated.");
-        return;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (/message is not modified/i.test(msg)) {
-          console.log("Telegram bot: fairness pin already current.");
-          return;
-        }
-        console.error("Telegram pin edit failed, posting a new pin:", err);
-      }
-    }
-    const posted = await this.sender.send(desired);
-    if (posted && posted.messageId) {
-      await this.sender.pin(posted.messageId);
-      console.log("Telegram bot: fairness pin posted.");
-    }
-  }
-
   private async pollLoop(): Promise<void> {
     while (!this.stopped) {
       try {
@@ -257,16 +207,35 @@ export class TelegramBot {
           await this.handleCommand(text, String(chatId));
         }
       } catch (err) {
-        console.error("Telegram poll error:", err);
-        await sleep(3_000);
+        const message = err instanceof Error ? err.message : String(err);
+        if (message.includes("409")) {
+          console.error(
+            "Telegram poll 409: another getUpdates client is still running. Retrying. This process stays up.",
+          );
+          await sleep(15_000);
+        } else {
+          console.error(`Telegram poll error: ${message}`);
+          await sleep(3_000);
+        }
       }
     }
   }
 
-  private jackpotReply(): string {
+  private publicPoolRows() {
+    if (!config.tokenAddress) return [];
+    const book =
+      this.runtime.phase === "locked" && this.runtime.snapshot
+        ? this.runtime.snapshot
+        : this.runtime.live;
+    if (totalTickets(book) <= 0) return [];
+    return this.runtime.ladder(10);
+  }
+
+  private async jackpotReply(): Promise<string> {
     const window = this.runtime.currentWindow(new Date());
+    await this.runtime.refreshPot();
     return formatJackpotCommand({
-      rows: this.runtime.ladder(10),
+      rows: this.publicPoolRows(),
       pot: this.runtime.pot(),
       phase: window.phase,
       nextLabel: window.nextBell?.label ?? null,
@@ -274,6 +243,7 @@ export class TelegramBot {
       snapshotLeadSeconds: config.snapshotLeadSeconds,
       oddsCapBps: config.oddsCapBps,
       links: publicLinks(),
+      bells24_7: config.bells24_7,
     });
   }
 
@@ -301,22 +271,34 @@ export class TelegramBot {
         oddsCapBps: config.oddsCapBps,
         snapshotLeadSeconds: config.snapshotLeadSeconds,
         links: publicLinks(),
+        bells24_7: config.bells24_7,
       }),
       chatId,
     );
   }
 
   private async sendPot(chatId: string): Promise<void> {
-    const pot = this.runtime.pot();
+    const pot = attachPaidOut(
+      await this.runtime.refreshPot(),
+      await sumPaidOutGme(getPool()),
+    );
     const links = publicLinks();
-    const caption = formatPotCommand(pot, config.jackpotWallet, links);
+    const caption = formatPotCommand(
+      pot,
+      config.jackpotWallet,
+      links,
+      config.tokenAddress,
+    );
     const sharePage = links.potUrl ?? `${publicSiteOrigin()}/#bell-pot`;
     const replyMarkup = {
       inline_keyboard: [
         [
           {
             text: "Share jackpot",
-            url: jackpotShareUrl(sharePage, formatPotShareText(pot)),
+            url: jackpotShareUrl(
+              sharePage,
+              formatPotShareText(pot, config.tokenAddress, publicSiteOrigin()),
+            ),
           },
         ],
       ],
@@ -357,16 +339,17 @@ export class TelegramBot {
       return;
     }
     if (cmd === "/jackpot" || cmd === "/standings") {
-      await this.sender.send(this.jackpotReply(), chatId);
+      await this.sender.send(await this.jackpotReply(), chatId);
       return;
     }
     if (cmd === "/ladder") {
       await this.sender.send(formatLadderRedirect(), chatId);
-      await this.sender.send(this.jackpotReply(), chatId);
+      await this.sender.send(await this.jackpotReply(), chatId);
       return;
     }
     if (cmd === "/next") {
       const window = this.runtime.currentWindow(new Date());
+      await this.runtime.refreshPot();
       await this.sender.send(
         formatNextCommand({
           label: window.nextBell?.label ?? null,
@@ -375,6 +358,7 @@ export class TelegramBot {
           phase: window.phase,
           pot: this.runtime.pot(),
           links: publicLinks(),
+          bells24_7: config.bells24_7,
         }),
         chatId,
       );

@@ -1,5 +1,12 @@
+import { getAddress, isAddress } from "viem";
+import { formatJackpotShareCaption } from "@closing-bell/fairness";
+
+import {
+  ET_ZONE,
+  formatBellClockLine,
+  type Remaining,
+} from "../clock/market-clock.js";
 import type { PotBreakdown } from "../pot/display.js";
-import type { Remaining } from "../clock/market-clock.js";
 import type { LadderRow, OddsResult } from "../tickets/engine.js";
 import { explorerTxUrl, type PublicLinkSet } from "./links.js";
 
@@ -10,14 +17,107 @@ export function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;");
 }
 
-function shortAddr(address: string): string {
-  const a = address.toLowerCase();
+const TRUNCATED_WALLET_RE =
+  /0x[0-9a-fA-F]{2,10}(?:…|\.\.\.)[0-9a-fA-F]{2,10}/;
+const FULL_WALLET_RE = /0x[a-fA-F0-9]{40}/;
+
+/** Checksummed 0x address. Invalid input is returned trimmed, never invented. */
+export function checksumWallet(address: string): string {
+  const trimmed = address.trim();
+  if (isAddress(trimmed, { strict: false })) return getAddress(trimmed);
+  return trimmed;
+}
+
+function shortAddrBesideFull(address: string): string {
+  const a = checksumWallet(address);
+  if (a.length <= 12) return a;
   return `${a.slice(0, 6)}…${a.slice(-4)}`;
 }
 
-/** Full 0x address for win celebration. Never truncate. */
-function fullAddr(address: string): string {
-  return escapeHtml(address.trim());
+/** Copyable full wallet. Short form is never the only form. */
+export function walletMono(address: string): string {
+  return `<code>${escapeHtml(checksumWallet(address))}</code>`;
+}
+
+export function walletCopyBlock(
+  address: string,
+  opts?: { withShort?: boolean },
+): string {
+  const full = walletMono(address);
+  if (opts?.withShort) {
+    return `${escapeHtml(shortAddrBesideFull(address))}\n${full}`;
+  }
+  return full;
+}
+
+function isTruncatedWallet(value: string): boolean {
+  return TRUNCATED_WALLET_RE.test(value);
+}
+
+/**
+ * Fail if a Telegram body shows a truncated wallet without a full
+ * checksummed address inside <code> (copy would get the short string).
+ */
+export function assertTelegramWalletsCopyable(html: string): void {
+  const codes = [...html.matchAll(/<code>([^<]*)<\/code>/g)].map((m) =>
+    m[1]
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">"),
+  );
+  for (const code of codes) {
+    if (isTruncatedWallet(code)) {
+      throw new Error(
+        `truncated wallet inside <code> (copy would be short): ${code}`,
+      );
+    }
+  }
+  const plain = stripTelegramHtml(html);
+  const truncated = plain.match(
+    /0x[0-9a-fA-F]{2,10}(?:…|\.\.\.)[0-9a-fA-F]{2,10}/g,
+  );
+  const fullInCode = codes.filter((code) => FULL_WALLET_RE.test(code));
+  if (truncated && truncated.length > 0 && fullInCode.length === 0) {
+    throw new Error(
+      "truncated wallet without a full copyable <code> address",
+    );
+  }
+  const fullInPlain = plain.match(/0x[a-fA-F0-9]{40}/g) ?? [];
+  for (const wallet of fullInPlain) {
+    const inCode = codes.some(
+      (code) => code.toLowerCase() === wallet.toLowerCase(),
+    );
+    if (!inCode) {
+      throw new Error(`wallet is not copyable <code> text: ${wallet}`);
+    }
+  }
+}
+
+function fmtEtInstant(iso: string | null): string {
+  if (!iso) return "n/a";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "n/a";
+  const formatted = new Intl.DateTimeFormat("en-US", {
+    timeZone: ET_ZONE,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
+  return `${formatted} ET`;
+}
+
+function bellTimesLines(bells24_7: boolean): string[] {
+  const lines = [
+    "<b>Bell times</b>",
+    escapeHtml(formatBellClockLine()),
+  ];
+  if (bells24_7) {
+    lines.push(escapeHtml("Bells also ring on weekends (24/7)."));
+  }
+  return lines;
 }
 
 function formatPayoutTxLine(input: {
@@ -106,8 +206,35 @@ function linkFooter(links: PublicLinkSet, extra?: Array<[string, string]>): stri
   return `<b>Links</b>\n${rows.join(" · ")}`;
 }
 
-const COMMANDS_LINE =
-  "/pot  /jackpot  /standings  /odds  /next  /how  /verify  /fairness  /random";
+/** Slash menu + advertised list. Keep in lockstep with formatCommandList(). */
+export const TELEGRAM_SLASH_COMMANDS: Array<{
+  command: string;
+  description: string;
+}> = [
+  { command: "pot", description: "Live jackpot in GME and USD" },
+  { command: "jackpot", description: "Jackpot pool and next ring" },
+  { command: "standings", description: "Jackpot pool (same as /jackpot)" },
+  { command: "ladder", description: "Jackpot pool (same as /jackpot)" },
+  { command: "odds", description: "Odds for a wallet: /odds 0x..." },
+  { command: "next", description: "Next jackpot ring" },
+  { command: "how", description: "How the bell works" },
+  { command: "verify", description: "Check a published ring" },
+  { command: "fairness", description: "How the winner is picked (same as /random)" },
+  { command: "random", description: "How the winner is picked (same as /fairness)" },
+  { command: "draw", description: "How the winner is picked (same as /fairness)" },
+];
+
+/** Full public command set. Use this everywhere the bot lists commands. */
+export function formatCommandList(): string {
+  return [
+    "<b>Commands</b>",
+    "Jackpot: /pot · /jackpot · /standings · /ladder (same as /jackpot)",
+    "Odds: /odds 0x…",
+    "Schedule: /next",
+    "How: /how",
+    "Fairness: /verify · /fairness · /random · /draw (same as /fairness)",
+  ].join("\n");
+}
 
 /** One-breath public answer. Never stop at “a person does not pick.” */
 export function whoPicksTheWinner(): string {
@@ -136,7 +263,7 @@ export function formatBuyAnnounce(input: {
   const lines = [
     header("🟢", "BUY"),
     "",
-    `<b>Wallet</b>\n${escapeHtml(shortAddr(input.wallet))}`,
+    `<b>Wallet</b>\n${walletCopyBlock(input.wallet)}`,
     "",
     `<b>Spent</b>\n${escapeHtml(fmtGme(input.gmeSpent))} GME (${escapeHtml(fmtUsd(input.usdSpent))})`,
     "",
@@ -229,7 +356,7 @@ export function formatRingResult(input: {
     "",
     `<b>Jackpot</b>\n${jackpot}`,
     "",
-    `<b>Winning wallet</b>\n<code>${fullAddr(input.winner)}</code>`,
+    `<b>Winning wallet</b>\n${walletMono(input.winner)}`,
     "",
     `<b>Odds</b>\n${escapeHtml(fmtPct(input.odds))}`,
     "",
@@ -260,13 +387,14 @@ export function formatWinCelebration(input: {
   verifyUrl: string;
   txHash: string | null;
   payoutFailed?: boolean;
+  bells24_7?: boolean;
 }): string {
   const lines = [
     header("🔔", WIN_CELEBRATION_MARKER),
     "",
     `<b>Bell</b>\n${escapeHtml(input.bellLabel)}`,
     "",
-    `<b>Winning wallet</b>\n<code>${fullAddr(input.winner)}</code>`,
+    `<b>Winning wallet</b>\n${walletMono(input.winner)}`,
     "",
     `<b>Jackpot</b>\n${escapeHtml(fmtGme(input.amountGme))} GME\n${escapeHtml(fmtUsd(input.amountUsd))}`,
     "",
@@ -279,9 +407,13 @@ export function formatWinCelebration(input: {
   }
   lines.push(
     "",
+    ...bellTimesLines(input.bells24_7 ?? true),
+    "",
     escapeHtml(whoPicksTheWinner()),
     "",
     href(input.verifyUrl, "Verify this ring"),
+    "",
+    formatCommandList(),
   );
   return lines.join("\n");
 }
@@ -299,7 +431,7 @@ export function formatPayoutFailedAlert(input: {
     "",
     `<b>Window</b>\n<code>${escapeHtml(input.windowId)}</code>`,
     "",
-    `<b>Winning wallet</b>\n<code>${fullAddr(input.winner)}</code>`,
+    `<b>Winning wallet</b>\n${walletMono(input.winner)}`,
     "",
     `<b>Jackpot</b>\n${escapeHtml(fmtGme(input.amountGme))} GME`,
     "",
@@ -320,7 +452,11 @@ export function formatPotCommand(
   pot: PotBreakdown,
   jackpotWallet: string,
   links: PublicLinkSet,
+  tokenAddress = "",
 ): string {
+  const paidGme = pot.totalPaidOutGme ?? 0;
+  const paidUsd =
+    pot.totalPaidOutUsd ?? paidGme * (pot.gmeUsdPrice || 0);
   const lines = [
     header("💰", "BELL POT"),
     "",
@@ -330,24 +466,44 @@ export function formatPotCommand(
     "",
     `<b>Accruing</b>\n${escapeHtml(fmtGme(pot.accruingUnclaimed))} GME`,
     "",
-    `<b>Wallet</b>\n<code>${escapeHtml(shortAddr(jackpotWallet))}</code>`,
+    `<b>Paid out</b>\n${escapeHtml(fmtGme(paidGme))} GME\n${escapeHtml(fmtUsd(paidUsd))}`,
+    "",
+    `<b>Wallet</b>\n${walletMono(jackpotWallet)}`,
     "",
     escapeHtml(whoPicksTheWinner()),
   ];
+  const ca = checksumWallet(tokenAddress);
+  if (/^0x[0-9a-fA-F]{40}$/.test(ca)) {
+    lines.push("", `<code>${escapeHtml(ca)}</code>`);
+  }
   const footer = linkFooter(links, links.potUrl ? [["View jackpot", links.potUrl]] : []);
   if (footer) lines.push("", footer);
   return lines.join("\n");
 }
 
-export function formatPotShareText(pot: PotBreakdown): string {
-  return `Closing Bell jackpot: ${fmtGme(pot.displayPot)} GME (${fmtUsd(pot.displayPotUsd)})`;
+export function formatPotShareText(
+  pot: PotBreakdown,
+  tokenAddress = "",
+  siteUrl = "https://closingbellonrh.com",
+): string {
+  const paidGme = pot.totalPaidOutGme ?? 0;
+  const paidUsd = pot.totalPaidOutUsd ?? paidGme * (pot.gmeUsdPrice || 0);
+  const ca = checksumWallet(tokenAddress);
+  return formatJackpotShareCaption({
+    jackpotGme: pot.displayPot,
+    jackpotUsd: pot.displayPotUsd,
+    paidOutGme: paidGme,
+    paidOutUsd: paidUsd,
+    siteUrl,
+    tokenAddress: /^0x[0-9a-fA-F]{40}$/.test(ca) ? ca : "",
+  });
 }
 
 export function formatOddsCommand(
   odds: OddsResult & { address: string },
   links: PublicLinkSet,
 ): string {
-  const lines = [header("🎯", "ODDS"), "", escapeHtml(shortAddr(odds.address))];
+  const lines = [header("🎯", "ODDS"), "", walletCopyBlock(odds.address)];
   if (odds.tickets <= 0) {
     lines.push("", "No tickets this window.");
   } else {
@@ -387,6 +543,7 @@ export function formatJackpotCommand(input: {
   snapshotLeadSeconds: number;
   oddsCapBps: number;
   links: PublicLinkSet;
+  bells24_7?: boolean;
 }): string {
   const capPct = fmtCapPct(input.oddsCapBps);
   const lines = [
@@ -398,17 +555,23 @@ export function formatJackpotCommand(input: {
     "",
     `<b>Next ring</b>\n${escapeHtml(input.nextLabel ?? "n/a")}\n${escapeHtml(fmtCountdown(input.countdown))}`,
     "",
+    ...bellTimesLines(input.bells24_7 ?? true),
+    "",
     `<b>Odds cap</b>\n${escapeHtml(capPct)} per wallet (marked CAP)`,
     "",
     "<b>Pool</b>",
   ];
   if (input.rows.length === 0) {
-    lines.push("No tickets in this pool yet.");
+    lines.push(
+      "No tickets yet. The pool is empty until $BELL is live and qualifying buys mint tickets.",
+      "",
+      formatCommandList(),
+    );
   } else {
     for (const row of input.rows.slice(0, 10)) {
       const cap = row.capped ? " CAP" : "";
       lines.push(
-        `${row.rank}. ${escapeHtml(shortAddr(row.address))}`,
+        `${row.rank}. ${walletCopyBlock(row.address, { withShort: true })}`,
         `${escapeHtml(fmtPct(row.odds))}${cap} · ${escapeHtml(row.tickets.toLocaleString("en-US"))} tickets`,
       );
     }
@@ -443,6 +606,7 @@ export function formatNextCommand(input: {
   phase: string;
   pot: PotBreakdown;
   links: PublicLinkSet;
+  bells24_7?: boolean;
 }): string {
   const lines = [
     header("⏳", "NEXT JACKPOT RING"),
@@ -451,7 +615,9 @@ export function formatNextCommand(input: {
     "",
     `<b>Bell</b>\n${escapeHtml(input.label ?? "n/a")}`,
     "",
-    `<b>When</b>\n${escapeHtml(fmtCountdown(input.countdown))}`,
+    `<b>When</b>\n${escapeHtml(fmtEtInstant(input.at))}\n${escapeHtml(fmtCountdown(input.countdown))}`,
+    "",
+    ...bellTimesLines(input.bells24_7 ?? true),
     "",
     `<b>Jackpot</b>\n${escapeHtml(fmtGme(input.pot.displayPot))} GME\n${escapeHtml(fmtUsd(input.pot.displayPotUsd))}`,
   ];
@@ -469,8 +635,10 @@ export function formatHowCommand(input: {
   oddsCapBps: number;
   snapshotLeadSeconds: number;
   links: PublicLinkSet;
+  bells24_7?: boolean;
 }): string {
   const capPct = fmtCapPct(input.oddsCapBps);
+  const bells24_7 = input.bells24_7 ?? true;
   const lines = [
     header("🔔", "HOW THE BELL WORKS"),
     "",
@@ -480,7 +648,9 @@ export function formatHowCommand(input: {
     "",
     `<b>3.</b> Fees fill the jackpot. Paid in GME.`,
     "",
-    `<b>4.</b> Open / Lunch / Close · 3 jackpots a day · one wallet wins`,
+    `<b>4.</b> 3 jackpots a day. One wallet wins.`,
+    "",
+    ...bellTimesLines(bells24_7),
     "",
     "<b>Entries</b>",
     escapeHtml(formatTicketCutoff(input.snapshotLeadSeconds)),
@@ -493,7 +663,7 @@ export function formatHowCommand(input: {
     "",
     linkFooter(input.links),
     "",
-    `<b>Commands</b>\n${COMMANDS_LINE}`,
+    formatCommandList(),
   ];
   return lines.join("\n");
 }
@@ -530,7 +700,7 @@ export function formatFairnessCommand(links: PublicLinkSet): string {
     "",
     escapeHtml(whoPicksTheWinner()),
     "",
-    "Same list + same formula → same wallet.",
+    "Same list + same formula -> same wallet.",
     "",
     "Formula id: closing-bell-draw-v1.",
     "",
@@ -580,17 +750,22 @@ export function isFairnessPinText(text: string): boolean {
 export function formatFairnessPin(
   links: PublicLinkSet,
   snapshotLeadSeconds = 120,
+  bells24_7 = true,
 ): string {
   const lines = [
     header("⚖️", FAIRNESS_PIN_MARKER),
     "",
     "One winning wallet per ring.",
     "",
+    ...bellTimesLines(bells24_7),
+    "",
     escapeHtml(formatTicketCutoff(snapshotLeadSeconds)),
     "",
     "When entries stop, the full list of wallets and ticket counts is saved for that drawing.",
     "",
     escapeHtml(whoPicksTheWinner()),
+    "",
+    formatCommandList(),
   ];
   const extra: Array<[string, string]> = [];
   if (links.verifyUrl) extra.push(["Verify", links.verifyUrl]);
@@ -599,20 +774,14 @@ export function formatFairnessPin(
   return lines.join("\n");
 }
 
-export function formatBotLive(input: {
+export function formatBotLive(_input?: {
   fixtureMode: boolean;
   dryRun: boolean;
 }): string {
-  const mode = [
-    input.fixtureMode ? "fixtureMode=true" : "fixtureMode=false",
-    input.dryRun ? "DRY_RUN_PAYOUTS=true" : "DRY_RUN_PAYOUTS=false",
-  ].join(", ");
   return [
     header("🔔", "Closing Bell bot is live"),
     "",
-    escapeHtml(mode),
-    "",
-    `<b>Commands</b>\n${COMMANDS_LINE}`,
+    formatCommandList(),
   ].join("\n");
 }
 

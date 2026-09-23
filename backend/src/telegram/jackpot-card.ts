@@ -67,7 +67,8 @@ export function jackpotFontPaths(): { regular: string; bold: string } {
 }
 
 function cacheKey(pot: PotBreakdown, siteHost: string): string {
-  return `inter-v1|${pot.displayPot}|${pot.displayPotUsd}|${pot.inPot}|${pot.accruingUnclaimed}|${siteHost}`;
+  const paid = pot.totalPaidOutGme ?? 0;
+  return `inter-v2|${pot.displayPot}|${pot.displayPotUsd}|${pot.inPot}|${pot.accruingUnclaimed}|${paid}|${siteHost}`;
 }
 
 /**
@@ -80,6 +81,9 @@ export function jackpotCardSvg(pot: PotBreakdown, siteHost: string): string {
   const inPot = xml(fmtGme(pot.inPot));
   const accruing = xml(fmtGme(pot.accruingUnclaimed));
   const host = xml(siteHost.replace(/^https?:\/\//, ""));
+  const paidGme = pot.totalPaidOutGme ?? 0;
+  const paidUsd = pot.totalPaidOutUsd ?? paidGme * (pot.gmeUsdPrice || 0);
+  const paid = xml(`Paid out ${fmtGme(paidGme)} GME (~${fmtUsd(paidUsd)})`);
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <defs>
@@ -121,6 +125,7 @@ export function jackpotCardSvg(pot: PotBreakdown, siteHost: string): string {
   <text x="880" y="430" text-anchor="middle" font-family="${FONT_FAMILY}" font-size="36" font-weight="400" fill="#f7f7f5">${usd}</text>
   <text x="880" y="488" text-anchor="middle" font-family="${FONT_FAMILY}" font-size="16" font-weight="400" fill="#8d8d88">In pot ${inPot} GME</text>
   <text x="880" y="516" text-anchor="middle" font-family="${FONT_FAMILY}" font-size="16" font-weight="400" fill="#8d8d88">Accruing ${accruing} GME</text>
+  <text x="880" y="548" text-anchor="middle" font-family="${FONT_FAMILY}" font-size="16" font-weight="400" fill="#8d8d88">${paid}</text>
   <text x="880" y="628" text-anchor="middle" font-family="${FONT_FAMILY}" font-size="18" font-weight="400" letter-spacing="3" fill="#8d8d88">${host}</text>
 </svg>`;
 }

@@ -12,6 +12,9 @@ export interface PotBreakdown {
   displayPot: number;
   gmeUsdPrice: number;
   displayPotUsd: number;
+  /** Lifetime GME actually sent. Omitted until the draws sum is attached. */
+  totalPaidOutGme?: number;
+  totalPaidOutUsd?: number;
 }
 
 export function computePotDisplay(input: {

@@ -7,6 +7,7 @@ import {
 import { config } from "../config.js";
 import type { BellRuntime } from "../runtime/bell-runtime.js";
 import { getPool } from "../db/client.js";
+import { attachPaidOut, sumPaidOutGme } from "../pot/paid-out.js";
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
@@ -67,11 +68,21 @@ export function buildServer(runtime: BellRuntime) {
       db,
       ...config.publicMeta(),
       now: new Date().toISOString(),
+      eoaGate: runtime.eoaGate?.stats() ?? {
+        skips: 0,
+        unwraps: 0,
+        drawSkips: 0,
+        denylist: 0,
+        cacheSize: 0,
+      },
     };
   });
 
   app.get("/pot", async () => {
-    const pot = await runtime.refreshPot();
+    const pot = attachPaidOut(
+      await runtime.refreshPot(),
+      await sumPaidOutGme(getPool()),
+    );
     return {
       ...pot,
       jackpotWallet: config.jackpotWallet || null,
@@ -82,10 +93,11 @@ export function buildServer(runtime: BellRuntime) {
   app.get("/share/jackpot.png", async (_req, reply) => {
     const { renderJackpotCard } = await import("../telegram/jackpot-card.js");
     const { publicSiteOrigin } = await import("../telegram/links.js");
-    const png = await renderJackpotCard(
+    const pot = attachPaidOut(
       await runtime.refreshPot(),
-      publicSiteOrigin(),
+      await sumPaidOutGme(getPool()),
     );
+    const png = await renderJackpotCard(pot, publicSiteOrigin());
     return reply
       .header("content-type", "image/png")
       .header("cache-control", "no-store")

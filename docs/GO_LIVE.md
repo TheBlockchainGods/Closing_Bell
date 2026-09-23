@@ -106,8 +106,8 @@ Indexing wrong or empty bag after a real buy:
 
 | Var | Notes |
 | --- | --- |
-| `RPC_URL` | Alchemy RH Chain. Alias `CHAIN_RPC_URL` |
-| `RPC_FALLBACK_URL` | Optional. Default `https://rpc.mainnet.chain.robinhood.com`. Indexer only |
+| `RPC_URL` | Alchemy RH Chain for pot / payout / draw seed. Alias `CHAIN_RPC_URL`. Indexer getLogs does **not** use this as primary |
+| `RPC_FALLBACK_URL` | Default `https://rpc.mainnet.chain.robinhood.com`. **Indexer log primary.** Alchemy Free cannot serve wide `eth_getLogs` |
 | `TOKEN_ADDRESS` | Predicted or live `$BELL` CA |
 | `CURVE_OR_POOL` | Predicted or live curve |
 | `START_BLOCK` | Deploy block or earlier. Cursor uses START_BLOCK-1. Live boot refuses a genesis scan if TOKEN is set and tip is multi-million |

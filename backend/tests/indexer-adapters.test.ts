@@ -19,7 +19,7 @@ import {
 } from "../src/indexer/encode-log.js";
 import type { ChainReader, LaunchRecord, RpcLog } from "../src/indexer/rpc.js";
 import { LaunchPhase } from "../src/indexer/abi.js";
-import { buildAdapters } from "../src/indexer/service.js";
+import { buildAdapters, IndexerService } from "../src/indexer/service.js";
 import { BellRuntime } from "../src/runtime/bell-runtime.js";
 import { config } from "../src/config.js";
 import { getWallet, totalTickets } from "../src/tickets/engine.js";
@@ -128,6 +128,28 @@ describe("prod path stays fixture", () => {
     if (!config.fixtureMode) return;
     expect(config.tokenAddress).toBe("");
     expect(buildAdapters().map((row) => row.name)).toEqual(["fixture"]);
+  });
+});
+
+describe("replayAll skips fixture tape when live", () => {
+  it("filters adapter=fixture when fixtureMode is false", async () => {
+    const sql: string[] = [];
+    const pool = {
+      query: async (text: string) => {
+        sql.push(text);
+        return { rows: [] };
+      },
+    };
+    const indexer = new IndexerService(
+      pool as never,
+      new BellRuntime(config),
+      [],
+      0n,
+    );
+    await indexer.replayAll(false);
+    expect(sql.at(-1)).toMatch(/adapter <> 'fixture'/);
+    await indexer.replayAll(true);
+    expect(sql.at(-1)).not.toMatch(/adapter <> 'fixture'/);
   });
 });
 

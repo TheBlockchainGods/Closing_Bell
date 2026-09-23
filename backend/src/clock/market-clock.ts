@@ -29,6 +29,22 @@ export const BELL_SCHEDULE: BellDefinition[] = [
   { kind: "close", label: "Close Bell", hourEt: 16, minuteEt: 0 },
 ];
 
+const BELL_KIND_CLOCK_NAME: Record<BellKind, string> = {
+  open: "Open",
+  lunch: "Lunch",
+  close: "Close",
+};
+
+/** Public clock copy: Open 9:30 AM ET · Lunch 12:30 PM ET · Close 4:00 PM ET */
+export function formatBellClockLine(): string {
+  return BELL_SCHEDULE.map((bell) => {
+    const hour12 = bell.hourEt % 12 || 12;
+    const ampm = bell.hourEt >= 12 ? "PM" : "AM";
+    const minute = String(bell.minuteEt).padStart(2, "0");
+    return `${BELL_KIND_CLOCK_NAME[bell.kind]} ${hour12}:${minute} ${ampm} ET`;
+  }).join(" · ");
+}
+
 const etPartsFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: ET_ZONE,
   hour12: false,

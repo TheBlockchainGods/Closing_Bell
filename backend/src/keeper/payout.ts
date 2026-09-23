@@ -154,8 +154,12 @@ export async function sendJackpotPayout(
     publicClient?: PayoutPublicClient;
     walletClient?: PayoutWalletClient;
     config?: Partial<PayoutRuntimeConfig>;
+    assertEoaWinner?: (address: string) => Promise<void>;
   },
 ): Promise<{ txHash: Hex }> {
+  if (deps?.assertEoaWinner) {
+    await deps.assertEoaWinner(input.winner);
+  }
   const cfg = payoutConfig(deps?.config);
   if (!cfg.jackpotPrivateKey) {
     throw new Error(

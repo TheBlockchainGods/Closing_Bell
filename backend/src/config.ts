@@ -3,6 +3,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  PUBLIC_RH_RPC_URL,
+  resolveIndexerRpcUrls,
+  rpcHost,
+} from "./indexer/rpc-fallback.js";
+
 const here = fileURLToPath(new URL(".", import.meta.url));
 loadDotenv({ path: resolve(here, "../.env") });
 
@@ -119,6 +125,8 @@ export const config = {
 
   chainId: envInt("CHAIN_ID", 4663),
   rpcUrl: envStringAny(["RPC_URL", "CHAIN_RPC_URL"]),
+  /** Public RH RPC. Indexer getLogs primary. Draw seed stays on RPC_URL. */
+  rpcFallbackUrl: envString("RPC_FALLBACK_URL", PUBLIC_RH_RPC_URL),
   tokenAddress: envAddress("TOKEN_ADDRESS"),
   curveOrPool: envAddress("CURVE_OR_POOL"),
   jackpotWallet: envAddressAny(
@@ -173,6 +181,17 @@ export const config = {
 
   telegramBotToken: envString("TELEGRAM_BOT_TOKEN"),
   telegramChatId: envString("TELEGRAM_CHAT_ID"),
+  /**
+   * Per-buy Telegram BUY + pot/odds spam. Default off so launch volume
+   * does not flood the public channel. Slash commands, ring/win posts,
+   * and pins stay on. Tickets still mint regardless.
+   */
+  telegramAnnounceBuys: envBool("TELEGRAM_ANNOUNCE_BUYS", false),
+  /**
+   * "Closing Bell bot is live" plus the command list. Default off so a
+   * process restart does not spam the channel. /how stays on demand.
+   */
+  telegramStartupAnnounce: envBool("TELEGRAM_STARTUP_ANNOUNCE", false),
   ponsFactoryAddress: envAddress(
     "PONS_FACTORY_ADDRESS",
     "0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e",
@@ -200,12 +219,24 @@ export const config = {
   },
 
   publicMeta() {
+    const indexer = resolveIndexerRpcUrls({
+      rpcUrl: this.rpcUrl,
+      fallbackUrl: this.rpcFallbackUrl,
+    });
+    const indexerStatus = this.fixtureMode
+      ? "fixture"
+      : !this.tokenAddress
+        ? "idle"
+        : this.startBlock <= 0
+          ? "needs-start-block"
+          : "live";
     return {
       chainId: this.chainId,
       fixtureMode: this.fixtureMode,
       dryRunPayouts: this.dryRunPayouts,
       tokenAddress: this.tokenAddress || null,
       curveOrPool: this.curveOrPool || null,
+      startBlock: this.startBlock,
       jackpotWallet: this.jackpotWallet || null,
       oddsCapBps: this.oddsCapBps,
       jackpotShareBps: this.jackpotShareBps,
@@ -215,6 +246,11 @@ export const config = {
       bells24_7: this.bells24_7,
       snapshotLeadSeconds: this.snapshotLeadSeconds,
       settleGraceSeconds: this.settleGraceSeconds,
+      rpcHost: rpcHost(this.rpcUrl) || null,
+      rpcFallbackHost: rpcHost(this.rpcFallbackUrl) || null,
+      indexerRpcHost: rpcHost(indexer.primary) || null,
+      indexerStatus,
+      telegramAnnounceBuys: this.telegramAnnounceBuys,
     };
   },
 } as const;

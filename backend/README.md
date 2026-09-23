@@ -29,8 +29,8 @@ Ticket accounting is proven with fixtures only. Production stays `FIXTURE_MODE=t
 One process runs:
 
 1. **API** — Fastify read routes
-2. **Indexer** — fixture or chain adapters; buy announces on new qualifying trades
-3. **Telegram bot** — announces + `/pot` `/odds` `/ladder` `/next`
+2. **Indexer** — fixture or chain adapters; tickets mint from trades. Per-buy Telegram posts are off by default (`TELEGRAM_ANNOUNCE_BUYS=false`)
+3. **Telegram bot** — slash commands + ring/win announces. Optional per-buy posts if `TELEGRAM_ANNOUNCE_BUYS=true`
 4. **Draw keeper** — snapshot → dry-run/live payout → wipe
 
 ## Fixture vs launch

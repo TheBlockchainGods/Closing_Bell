@@ -275,4 +275,39 @@ describe("late-start backfill ingest", () => {
     expect(getWallet(runtime.live, LATER).tickets).toBe(100_000);
     expect(totalTickets(runtime.live)).toBe(100_000);
   });
+
+  it("keeps the process up and does not move the cursor when a poll throws", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const runtime = ticketRuntime();
+    const pool = memoryPool({
+      adapter: "pons-launch",
+      last: TIP.toString(),
+      start: N.toString(),
+    });
+    const updates: string[] = [];
+    const original = pool.query.bind(pool);
+    pool.query = (async (sql: string, params?: unknown[]) => {
+      if (String(sql).includes("INSERT INTO indexer_cursor")) {
+        updates.push(String(params?.[1]));
+      }
+      return original(sql, params);
+    }) as typeof pool.query;
+    const indexer = new IndexerService(
+      pool,
+      runtime,
+      [
+        {
+          name: "pons-launch",
+          async fetchTrades() {
+            throw new Error("indexer RPC HTTP 400 block range");
+          },
+        },
+      ],
+      N,
+    );
+    await expect(indexer.pollOnce()).resolves.toBeUndefined();
+    expect(updates).toEqual([]);
+    expect(String(spy.mock.calls.at(-1)?.[0])).toMatch(/cursor unchanged/);
+    spy.mockRestore();
+  });
 });

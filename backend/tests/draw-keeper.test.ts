@@ -15,7 +15,7 @@ import {
 } from "../src/draw/select.js";
 import { BellRuntime } from "../src/runtime/bell-runtime.js";
 import { config } from "../src/config.js";
-import { formatBuyAnnounce, formatFairnessCommand, formatFairnessPin, formatHowCommand, formatJackpotCommand, formatLadderRedirect, formatNextCommand, formatPotCommand, formatRingResult, formatTicketCutoff, formatVerifyCommand, formatWinCelebration, whoPicksTheWinner } from "../src/telegram/format.js";
+import { checksumWallet, formatBuyAnnounce, formatFairnessCommand, formatFairnessPin, formatHowCommand, formatJackpotCommand, formatLadderRedirect, formatNextCommand, formatPotCommand, formatRingResult, formatTicketCutoff, formatVerifyCommand, formatWinCelebration, whoPicksTheWinner } from "../src/telegram/format.js";
 import { computePotDisplay } from "../src/pot/display.js";
 
 const cfg = {
@@ -114,7 +114,7 @@ describe("dry-run window flow (in-memory)", () => {
     expect(announce).toContain("DRY RUN");
     expect(announce).toContain("Dry run. No GME sent.");
     expect(announce).toContain("Winning wallet");
-    expect(announce).toContain(picked!.winner.address);
+    expect(announce).toContain(checksumWallet(picked!.winner.address));
     expect(announce).not.toMatch(/0x[0-9a-fA-F]{4}…/);
     expect(announce).toContain("Payout tx");
     expect(announce).toContain("none (dry-run, no GME sent)");
@@ -183,6 +183,7 @@ describe("telegram how + pin copy", () => {
     expect(how).toContain("HOW THE BELL WORKS");
     expect(how).toContain("however you buy");
     expect(how).toContain("3 jackpots a day");
+    expect(how).toContain("Open 9:30 AM ET · Lunch 12:30 PM ET · Close 4:00 PM ET");
     expect(how).toContain("/verify");
     expect(how).toContain("closingbellonrh.com");
     expect(how).toContain(formatTicketCutoff(120));
@@ -210,7 +211,7 @@ describe("telegram how + pin copy", () => {
     expect(fairness).toContain("FAIRNESS");
     expect(fairness).toContain("<b>Summary</b>");
     expect(fairness).toContain(whoPicksTheWinner());
-    expect(fairness).toContain("Same list + same formula → same wallet.");
+    expect(fairness).toContain("Same list + same formula -> same wallet.");
     expect(fairness).toContain("closing-bell-draw-v1");
     expect(fairness).toContain("/verify");
     expect(fairness).toContain("https://closingbellonrh.com/verify");
@@ -226,6 +227,49 @@ describe("telegram how + pin copy", () => {
     expect(fairness).toContain("We do not claim on-chain VRF");
     expect(fairness).toContain("public formula you can recompute");
     expect(fairness).not.toMatch(/—/);
+    expect(typeof fairness).toBe("string");
+    expect(Array.isArray(fairness)).toBe(false);
+    expect(fairness).toContain("<b>");
+    expect(fairness).toContain("FAIRNESS");
+    expect(fairness).not.toContain("PSPath");
+    expect(fairness).not.toContain("\\u003c");
+    expect(fairness.trimStart().startsWith("[")).toBe(false);
+    expect(fairness.trimStart().startsWith("{")).toBe(false);
+    expect(JSON.stringify(fairness)).not.toMatch(/^\[/);
+  });
+
+  it("keeps /fairness as Rose-style HTML, never a JSON or PowerShell dump", () => {
+    const fairness = formatFairnessCommand(links);
+    expect(fairness).toMatch(/<b>[^<]*FAIRNESS<\/b>/);
+    expect(fairness).toContain("closingbellonrh.com/verify");
+    expect(fairness).toContain("Same list + same formula -> same wallet.");
+    expect(fairness).not.toContain("→");
+    expect(fairness).not.toContain("PSPath");
+    expect(fairness).not.toContain("\\u003c");
+    expect(fairness).not.toContain("\\u003e");
+    expect(fairness.trim()).not.toMatch(/^[\[{]/);
+    // Must be one string body, not JSON.stringify of the line array.
+    expect(JSON.parse(JSON.stringify(fairness))).toBe(fairness);
+  });
+});
+
+describe("telegram message text guard", () => {
+  it("accepts plain HTML and rejects dumps", async () => {
+    const { assertTelegramMessageText } = await import("../src/telegram/client.js");
+    expect(assertTelegramMessageText("<b>FAIRNESS</b>\nok")).toContain("FAIRNESS");
+    expect(() => assertTelegramMessageText(["a", "b"] as unknown as string)).toThrow(
+      /plain string/,
+    );
+    expect(() =>
+      assertTelegramMessageText({ value: "<b>x</b>" } as unknown as string),
+    ).toThrow(/plain string/);
+    expect(() =>
+      assertTelegramMessageText("PSPath : C:\\tmp\\fairness-out.txt"),
+    ).toThrow(/PowerShell/);
+    expect(() => assertTelegramMessageText("\\u003cb\\u003eFAIRNESS")).toThrow(
+      /Unicode-escaped/,
+    );
+    expect(() => assertTelegramMessageText('["line1","line2"]')).toThrow(/JSON/);
   });
 });
 
@@ -276,6 +320,8 @@ describe("telegram jackpot + next copy", () => {
     expect(text).toContain("16h 00m 04s");
     expect(text).toContain("CAP");
     expect(text).toContain("475,190 tickets");
+    expect(text).toContain(`<code>${checksumWallet("0x4b19ce77a0e2d61f5c8b3ad9017f4e62c0ab8137")}</code>`);
+    expect(text).toContain("Open 9:30 AM ET · Lunch 12:30 PM ET · Close 4:00 PM ET");
     expect(text).toContain(formatTicketCutoff(120));
     expect(text).toContain(whoPicksTheWinner());
     expect(text).toContain("closingbellonrh.com/#bell-pot");
@@ -301,6 +347,8 @@ describe("telegram jackpot + next copy", () => {
     });
     expect(text).toContain("NEXT JACKPOT RING");
     expect(text).toContain("Close Bell");
+    expect(text).toContain("Open 9:30 AM ET · Lunch 12:30 PM ET · Close 4:00 PM ET");
+    expect(text).toMatch(/4:00\sPM ET/);
     expect(text).toContain("01h 02m 03s");
     expect(text).toContain("GME");
     expect(text).toContain("$");
@@ -338,7 +386,7 @@ describe("telegram jackpot + next copy", () => {
     });
     expect(caption).toContain("WIN CELEBRATION");
     expect(caption).toContain("Close Bell");
-    expect(caption).toContain(winner);
+    expect(caption).toContain(checksumWallet(winner));
     expect(caption).not.toContain("0x4b19…8137");
     expect(caption).not.toMatch(/0x4b19…/);
     expect(caption).toContain("GME");
@@ -364,7 +412,7 @@ describe("telegram jackpot + next copy", () => {
       txHash,
       verifyUrl: "https://closingbellonrh.com/verify",
     });
-    expect(caption).toContain(winner);
+    expect(caption).toContain(checksumWallet(winner));
     expect(caption).toContain(txHash);
     expect(caption).toContain("robinhoodchain.blockscout.com/tx/");
     expect(caption).toContain("View on explorer");
@@ -383,7 +431,7 @@ describe("telegram jackpot + next copy", () => {
       txHash: "dry-run-receipt-window-1",
       verifyUrl: "https://closingbellonrh.com/verify",
     });
-    expect(caption).toContain(winner);
+    expect(caption).toContain(checksumWallet(winner));
     expect(caption).toContain("Payout tx (dry-run)");
     expect(caption).toContain("dry-run-receipt-window-1");
     expect(caption).not.toContain("robinhoodchain.blockscout.com");
@@ -402,7 +450,7 @@ describe("telegram jackpot + next copy", () => {
       txHash: null,
       verifyUrl: "https://closingbellonrh.com/verify",
     });
-    expect(caption).toContain(winner);
+    expect(caption).toContain(checksumWallet(winner));
     expect(caption).toContain("none (payout send failed, pay manually)");
     expect(caption).toContain("Payout send failed. No GME sent by the bot.");
     expect(caption).not.toContain("View on explorer");
@@ -450,6 +498,7 @@ describe("jackpot share card", () => {
     expect(svg).toContain("$30,224.45");
     expect(svg).toContain("In pot 1,284.62 GME");
     expect(svg).toContain("Accruing 19.282 GME");
+    expect(svg).toContain("Paid out");
     expect(svg).toContain("GME");
     expect(svg).toContain("closingbellonrh.com");
     expect(svg).not.toMatch(/Georgia|Times New Roman|—/);

@@ -4,10 +4,13 @@ import { config } from "../config.js";
 import { FixtureAdapter } from "./adapters/fixture.js";
 import { PonsLaunchAdapter } from "./adapters/pons-launch.js";
 import { bootCursor, cursorSeed } from "./cursor.js";
+import { genesisScanDecision } from "./rpc-fallback.js";
+import { createRpcReader } from "./rpc.js";
 import type { ChainTradeEvent, VenueAdapter } from "./types.js";
 import type { BellRuntime } from "../runtime/bell-runtime.js";
 import type { Hex } from "viem";
 import { PONS_V2_FACTORY, PONS_V2_HOOK, UNISWAP_V4_POOL_MANAGER } from "./abi.js";
+import type { EoaGate } from "../chain/eoa-gate.js";
 
 export function buildAdapters(): VenueAdapter[] {
   if (config.fixtureMode) {
@@ -37,6 +40,36 @@ export function buildAdapters(): VenueAdapter[] {
   ];
 }
 
+/**
+ * Live boot: never silently scan from block 0 when TOKEN is set on a
+ * multi-million-tip chain. Tests that inject adapters skip this.
+ */
+export async function resolveLiveAdapters(): Promise<VenueAdapter[]> {
+  const adapters = buildAdapters();
+  if (config.fixtureMode) return adapters;
+  if (!config.tokenAddress) return adapters;
+  if (config.startBlock > 0) return adapters;
+
+  let tip: bigint | null = null;
+  if (config.rpcUrl) {
+    try {
+      tip = await createRpcReader(config.rpcUrl).getBlockNumber();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`START_BLOCK guard could not read chain tip (${message}).`);
+      tip = null;
+    }
+  }
+  const decision = genesisScanDecision({
+    tokenAddress: config.tokenAddress,
+    startBlock: config.startBlock,
+    tipBlock: tip,
+  });
+  if (decision.message) console.error(decision.message);
+  if (decision.refuse) return [];
+  return adapters;
+}
+
 export class IndexerService {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
@@ -49,6 +82,7 @@ export class IndexerService {
     private readonly runtime: BellRuntime,
     private readonly adapters: VenueAdapter[],
     private readonly startBlock: bigint,
+    private readonly eoaGate: EoaGate | null = null,
   ) {}
 
   setTradeHandler(
@@ -149,6 +183,11 @@ export class IndexerService {
         }
       }
       this.runtime.tick(new Date());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(
+        `Indexer poll failed (cursor unchanged, tickets not skipped): ${message}`,
+      );
     } finally {
       this.running = false;
     }
@@ -158,6 +197,7 @@ export class IndexerService {
    * Idempotent ingest: event_id primary key prevents double-count on restart.
    */
   async ingest(event: ChainTradeEvent): Promise<boolean> {
+    const credited = await this.creditEvent(event);
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
@@ -175,7 +215,7 @@ export class IndexerService {
           event.logIndex,
           event.blockNumber.toString(),
           event.kind,
-          event.wallet.toLowerCase(),
+          (credited?.wallet ?? event.wallet).toLowerCase(),
           event.gmeAmount,
           event.bellAmount,
           event.bellBalanceBefore ?? null,
@@ -188,10 +228,12 @@ export class IndexerService {
         return false;
       }
 
-      this.runtime.applyEvent(event);
+      if (credited) {
+        this.runtime.applyEvent(credited);
+      }
       await client.query("COMMIT");
-      if (this.onNewTrade) {
-        await this.onNewTrade(event);
+      if (credited && this.onNewTrade) {
+        await this.onNewTrade(credited);
       }
       return true;
     } catch (err) {
@@ -203,7 +245,7 @@ export class IndexerService {
   }
 
   /** Rebuild live ticket book from persisted events (restart safety). */
-  async replayAll(): Promise<void> {
+  async replayAll(fixtureMode = config.fixtureMode): Promise<void> {
     const { rows } = await this.pool.query<{
       event_id: string;
       adapter: string;
@@ -217,8 +259,12 @@ export class IndexerService {
       bell_balance_before: string | null;
       occurred_at: Date;
     }>(
-      `SELECT * FROM ingested_events
-       ORDER BY block_number ASC, log_index ASC`,
+      fixtureMode
+        ? `SELECT * FROM ingested_events
+           ORDER BY block_number ASC, log_index ASC`
+        : `SELECT * FROM ingested_events
+           WHERE adapter <> 'fixture'
+           ORDER BY block_number ASC, log_index ASC`,
     );
 
     this.runtime.live.clear();
@@ -228,7 +274,7 @@ export class IndexerService {
     this.runtime.phase = "open";
 
     for (const row of rows) {
-      this.runtime.applyEvent({
+      const raw: ChainTradeEvent = {
         eventId: row.event_id,
         adapter: row.adapter,
         txHash: row.tx_hash,
@@ -243,7 +289,26 @@ export class IndexerService {
             ? undefined
             : Number(row.bell_balance_before),
         occurredAt: new Date(row.occurred_at),
-      });
+      };
+      const credited = await this.creditEvent(raw);
+      if (credited) this.runtime.applyEvent(credited);
     }
+  }
+
+  /** Null means skip ticket credit (contract with no safe EOA unwrap). */
+  private async creditEvent(
+    event: ChainTradeEvent,
+  ): Promise<ChainTradeEvent | null> {
+    const gate = this.eoaGate ?? this.runtime.eoaGate;
+    if (!gate) return event;
+    const decision = await gate.creditForTrade({
+      recipient: event.wallet,
+      txHash: event.txHash,
+    });
+    if (decision.action === "skip") return null;
+    if (decision.creditWallet && decision.creditWallet !== event.wallet.toLowerCase()) {
+      return { ...event, wallet: decision.creditWallet };
+    }
+    return event;
   }
 }

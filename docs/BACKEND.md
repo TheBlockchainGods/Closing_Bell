@@ -172,7 +172,8 @@ Commands (polled): `/pot` `/odds <address>` `/ladder` `/next` — all reuse runt
 | `SNAPSHOT_LEAD_SECONDS` | `120` | Bag lock lead |
 | `SETTLE_GRACE_SECONDS` | `900` | How late a missed bell may still ring (restart catch-up) |
 | `CHAIN_ID` | `4663` | Robinhood Chain |
-| `RPC_URL` | empty | Indexing + live payouts (alias `CHAIN_RPC_URL`) |
+| `RPC_URL` | empty | Pot / payouts / draw seed (alias `CHAIN_RPC_URL`) |
+| `RPC_FALLBACK_URL` | public RH RPC | Indexer getLogs primary. Default `https://rpc.mainnet.chain.robinhood.com` |
 | `TOKEN_ADDRESS` | empty | Launch paste |
 | `CURVE_OR_POOL` | empty | Launch paste |
 | `JACKPOT_WALLET` | fixture | Public jackpot (alias `JACKPOT_WALLET_ADDRESS`) |
@@ -188,6 +189,8 @@ Commands (polled): `/pot` `/odds <address>` `/ladder` `/next` — all reuse runt
 | `DRY_RUN_PAYOUTS` | `true` | No GME send |
 | `TELEGRAM_BOT_TOKEN` | empty | Optional |
 | `TELEGRAM_CHAT_ID` | empty | Optional |
+| `TELEGRAM_ANNOUNCE_BUYS` | `false` | Per-buy BUY + pot/odds channel posts. Default off. Tickets still mint. Slash commands and ring/win posts stay on |
+| `TELEGRAM_STARTUP_ANNOUNCE` | `false` | "bot is live" on process start. Default off. No How pin on boot. `/how` is on demand |
 | `PUBLIC_SITE_URL` | `https://closingbellonrh.com` | Telegram + verify links |
 | `PUBLIC_API_URL` | Lightsail origin | Receipt links |
 | `X_URL` | `https://x.com/ClosingBellOnRH` | Share / footer |

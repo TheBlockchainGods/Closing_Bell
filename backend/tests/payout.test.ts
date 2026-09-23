@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseUnits, type Hex } from "viem";
 
-import { formatWinCelebration, whoPicksTheWinner } from "../src/telegram/format.js";
+import { formatWinCelebration, checksumWallet, whoPicksTheWinner } from "../src/telegram/format.js";
 import {
   assertJackpotPayoutConfig,
   gmeToTokenAmount,
@@ -130,6 +130,8 @@ describe("resolveJackpotPayout", () => {
       winner: WINNER,
       amountGme: 1303.902,
     });
+    expect(send.mock.calls[0][0].winner).toBe(WINNER);
+    expect(Object.keys(send.mock.calls[0][0])).toEqual(["winner", "amountGme"]);
     expect(result.phase).toBe("paid");
     expect(result.txHash).toBe(TX_HASH);
     const caption = formatWinCelebration({
@@ -196,7 +198,7 @@ describe("resolveJackpotPayout", () => {
     expect(caption).toContain("Payout send failed. No GME sent by the bot.");
     expect(caption).not.toContain("RING · PAID");
     expect(caption).not.toContain("robinhoodchain.blockscout.com");
-    expect(caption).toContain(WINNER);
+    expect(caption).toContain(checksumWallet(WINNER));
     expect(caption).toContain(whoPicksTheWinner());
   });
 });
